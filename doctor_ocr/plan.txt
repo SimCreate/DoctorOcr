@@ -1,0 +1,55 @@
+================================================================
+  doctor_ocr 공부 & 개선 일정
+  시작: 2026-07-15 (화) ~ 2026-07-19 (토 오전)
+================================================================
+
+[화] Day 1 — 코드 한 줄씩 따라가기 + 현재 상태 파악
+  □ local_train.py main() 위에서부터 한 줄씩 읽기
+    → CONFIG → 데이터 → 모델 → 학습 루프 순
+  □ local_infer.py도 같은 방식으로 따라가기
+  □ 현재 학습 결과 확인: best_model.pth의 epoch/val_loss/val_acc
+  □ 데이터 파악: 이미지 총 개수, 라벨 유니크 문자 집합, 클래스 수
+  □ 모르는 용어/블록은 바로바로 질문
+
+[수] Day 2 — 코드 리팩토링 (구조 잡기)
+  □ 모델 정의를 별도 파일로 분리 → model.py
+    → local_train.py / local_infer.py에서 중복 제거
+  □ config.py 또는 config.yaml로 하이퍼파라미터 분리
+    → 현재 하드코딩된 BATCH_SIZE, LR, IMAGE_SIZE 등 모두 밖으로
+  □ train/infer 스크립트에서 model.py, config를 import하게 수정
+  □ git commit: "refactor: split model/config, remove duplication"
+
+[목 밤 ~ 금] Day 3+ — 가장 큰 작업 (긴 세션)
+
+  [목 퇴근 후]
+    □ 데이터 파이프라인 개선
+      → augmentation 추가 (RandomHorizontalFlip, ColorJitter, RandomAffine)
+      → train/val/test split 체계화
+    □ 데이터 분석 스크립트 작성
+      → 클래스 분포, 라벨 길이 분포 시각화
+
+  [금 — 하루 종일]
+    □ 모델 아키텍처 개선
+      → 학습률 warmup + cosine decay
+      → CTC loss 도입 검토 (seq2seq attention 대비 안정성)
+      → 또는 backbone 교체 (ResNet pretrained 등)
+    □ 개선 모델 재학습 시작 (돌려놓고 결과 기다리기)
+    □ 학습 곡선 분석, 하이퍼파라미터 튜닝
+
+[토 오전] Day 4 — 평가 + 서빙 프로토타입 + 마무리
+  □ 재학습 결과 확인 + 상세 평가
+    → per-class accuracy, 실패 케이스 분석
+  □ 배치 추론 추가, Gradio 웹 UI (이미지 올리면 OCR 결과)
+  □ README.md 작성 (프로젝트 설명, 사용법, 결과 정리)
+  □ 전체 git commit + 정리
+
+================================================================
+  현재 프로젝트 상태
+================================================================
+  모델: CRNN (CNN 7블록 + BiLSTM 2층 + Attention Decoder)
+  학습: 50 epoch까지 기록 있음 (best_model.pth)
+  데이터: ~100장 의사 손글씨 이미지 + CSV 라벨
+  추론: 랜덤 10개 샘플 평가만 되어 있음
+
+================================================================
+  각 날 끝날 때: "오늘 한 거 정리해줘" 하면 정리+다음 날 준비
