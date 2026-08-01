@@ -10,11 +10,31 @@ description: v1 (doctor_ocr) 프로젝트 상세 보고 — 기준 CRNN, 학습 
 [확인됨] 추론 완료 — ACCURACY 0/10 = 0.00% (로그: /home/dev/doctor_ocr/infer_bg_1403.log, proc_64741a6f4a15 exit 0)
 [확인됨] 소스 수정: CUDA_VISIBLE_DEVICES='0' (default='0')
 
-## 아키텍처
-- 기준 CRNN (CNN Encoder + BiLSTM + Attention Decoder)
-- BATCH_SIZE=8, NUM_EPOCHS=50, LR=1e-4
-- DEVICE=cuda:0 (Blackwell cuda0, CUDA_VISIBLE_DEVICES='0')
-- venv: /home/dev/doctor_ocr/venv/bin/python
+## 아키텍처 — 기준 CRNN (local_train.py)
+
+3컴포넌트 구조: CNN Encoder + BiLSTM + **Attention Decoder** (CTC 아님).
+이후 버전(v2_1/v2_2)의 비교 기준선.
+
+### CNNEncoder (7 Conv Block)
+- Conv2d-BN-ReLU 7블록: Conv(3,64,3) → MaxPool(2,2) → Conv(64,128) → MaxPool(2,2) → Conv(128,256) → Conv(256,256)+MaxPool(2,1) → Conv(256,512) → Conv(512,512)+MaxPool(2,1) → Conv(512,512,2)
+- 출력 채널 512, 출력 특징맵 (B, 512, 3, 63)
+- **논문**: CRNN — https://arxiv.org/abs/1507.05717 (An End-to-End Trainable Neural Network for Image-based Sequence Recognition, Shi et al.)
+
+### BiLSTM (2층, hidden=256)
+- hidden_size=256, num_layers=2, bidirectional, dropout=0.2
+- 출력 차원: hidden×2 = 512
+
+### AttentionDecoder (4-head, LSTM 1층)
+- **4-head** MultiheadAttention + LSTM 1층(hidden 256)
+- Teacher forcing 0.5
+- `encoder_proj`를 `__init__`에서 생성해 forward마다 재생성하던 **메모리 누수 버그 수정** (`[FIX]`)
+- **논문**: Attention — https://arxiv.org/abs/1409.0473 (Neural Machine Translation by Jointly Learning to Align and Translate, Bahdanau)
+
+### 학습 설정
+- BATCH_SIZE=8, ACCUM_STEPS=2 (유효 배치 16), NUM_WORKERS=2
+- LR=1e-4, NUM_EPOCHS=50, WEIGHT_DECAY=1e-5
+- 손실: CrossEntropy(ignore_index=<PAD>) — Attention seq2seq 기반
+- DEVICE=cuda:0 (Blackwell, CUDA_VISIBLE_DEVICES='0')
 
 ## 학습 세부 결과
 - 총 50 epoch 완료

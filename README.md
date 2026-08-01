@@ -57,6 +57,27 @@ DoctorOcr/
 - **최고 성능**: v2.2 — CTC Loss + 대용량 배치, val_loss 1.0216, 추론 40%
 - **핵심 개선 요인**: Attention seq2seq → CTC 전환 (반복 토큰 해결, alignment 불필요)
 
+## 아키텍처 진화
+
+4개 버전 모두 CRNN 3컴포넌트(CNN Encoder + BiLSTM + Decoder) 골격을 유지하되, 디코더와 학습 전략이 단계적으로 개선:
+
+| 버전 | CNN Encoder | BiLSTM | Decoder | 개선 포인트 |
+|---|---|---|---|---|
+| v1 | 7 Conv Block | 2층, hidden 256, dropout 0.2 | Attention (4-head, LSTM 1층), TF 0.5 | 기준선 |
+| v2 | 7 Conv Block | 2층, hidden 256 | Attention (4-head), TF 0.5 | BATCH 96 + AMP |
+| v2.1 | SEBlock 5블록 | 3층, hidden 384, dropout 0.3 | Attention (8-head, LSTM 2층) + Beam Search | SEBlock + 층수 증가 + 8-head |
+| v2.2 | SEBlock 5블록 | 3층, hidden 256, dropout 0.3 | **CTC Head** | CTC 전환 (Attention 제거) |
+
+## 참고 논문
+
+| 기술 | 논문 | 링크 |
+|---|---|---|
+| CRNN | An End-to-End Trainable Neural Network for Image-based Sequence Recognition (Shi et al., 2015) | https://arxiv.org/abs/1507.05717 |
+| CTC | Connectionist Temporal Classification (Graves, 2006) | https://www.cs.toronto.edu/~graves/icml_2006.pdf |
+| Attention | Neural Machine Translation by Jointly Learning to Align and Translate (Bahdanau et al., 2014) | https://arxiv.org/abs/1409.0473 |
+| SE Block | Squeeze-and-Excitation Networks (Hu et al., 2017) | https://arxiv.org/abs/1709.01507 |
+
+
 ## 데이터셋
 
 - **소스**: Kaggle RxHandBD — 의사 처방전 손글씨 5,578장 (Train 5,000 + Test 400)

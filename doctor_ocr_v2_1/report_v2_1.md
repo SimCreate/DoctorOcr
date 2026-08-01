@@ -10,12 +10,31 @@ description: v2_1 (doctor_ocr_v2_1) 프로젝트 상세 보고 — BiLSTM 3층+A
 [확인됨] 추론 완료(수정 후) — ACCURACY 2/10 = 20.00% (proc_f2f2ff542d5e exit 0, infer_bg_1403_fixed.log)
 [확인됨] 수정: local_infer_v2_1.py:106 hidden_size=384 강제 (체크포인트 config 256 ≠ 모델 384)
 
-## 아키텍처
-- BiLSTM 3층 (hidden_size=384, num_layers=3, bidirectional=True, dropout=0.3)
-- AttentionDecoder (rnn_out_dim=768 → vocab_size)
-- CNN Encoder (out_channels=512, encoder_out_dim=1536)
-- BATCH_SIZE=40, ACCUM_STEPS=4, LR=3e-4, USE_AMP=True
-- venv: /home/dev/vllm-env/bin/python (PyTorch 2.11.0+cu130)
+## 아키텍처 — 개선 CRNN (model_v2_1.py)
+
+3컴포넌트 구조로, v1 대비 CNN에 SEBlock 추가 + BiLSTM 3층(384) + Attention 강화.
+
+### CNNEncoder (SEBlock 5블록)
+- Conv-BN-ReLU 5블록, 각 블록 끝에 **SEBlock** 채널 어텐션
+- 풀링: MaxPool(2,2)×2 + MaxPool(2,1)×2 + 마지막 Conv(2,p=0) → 출력 512채널
+- Gradient checkpointing 지원 (`use_checkpointing`)
+- **논문**: SE Block — https://arxiv.org/abs/1709.01507 (Squeeze-and-Excitation Networks)
+
+### BiLSTM (3층, hidden=384)
+- hidden_size=384, num_layers=3, bidirectional, dropout=0.3
+- 출력 차원: hidden×2 = 768
+- **논문**: BiLSTM 기반 OCR — https://arxiv.org/abs/1507.05717 (CRNN, Shi et al.)
+
+### AttentionDecoder (8-head, LSTM 2층)
+- **8-head** MultiheadAttention (v1은 4-head) + LSTM 2층(hidden 384)
+- Teacher forcing 0.5
+- **Beam Search** 지원 (`beam_search`, beam_width=5) — 추론 시 greedy 대신 beam decoding 사용
+- **논문**: Attention — https://arxiv.org/abs/1409.0473 (Neural Machine Translation by Jointly Learning to Align and Translate, Bahdanau)
+
+### 학습 설정
+- BATCH_SIZE=40, ACCUM_STEPS=4 (effective batch 160), NUM_WORKERS=4
+- LR=3e-4, USE_AMP=True, Gradient Checkpointing
+- DEVICE=cuda:0 (Blackwell)
 
 ## 학습 세부
 - Epoch 4 val_loss=3.0362 (초기)

@@ -10,11 +10,31 @@ description: v2_2 (doctor_ocr_v2_2) 프로젝트 상세 보고 — v2_2 아키�
 [확인됨] 추론 완료 — ACCURACY 4/10 = 40.00% (proc_93c913b6e97c exit 0, 최상)
 [확인됨] evaluate.py 수정 완료 (CUDA_VISIBLE_DEVICES='0')
 
-## 아키텍처
-- v2_2 전용 모델 (model_v2_2.py)
+## 아키텍처 — CTC 기반 CRNN (model_v2_2.py)
+
+3컴포넌트 구조로, Attention Decoder를 **CTC Head**로 교체한 것이 최대 변화 (반복 토큰 문제 해결, alignment 불필요).
+
+### CNNEncoder (SEBlock 5블록)
+- Conv-BN-ReLU 블록 5개, 각 블록 끝에 **SEBlock**(Squeeze-and-Excitation) 채널 어텐션
+- 풀링: MaxPool(2,2)×2 + MaxPool(2,1)×2 + 마지막 Conv(2,p=0) → 특징맵 높이를 수평 압축
+- 출력 채널: 512 (`out_channels=512`)
+- **논문**: SE Block — https://arxiv.org/abs/1709.01507 (Squeeze-and-Excitation Networks)
+
+### BiLSTM (3층)
+- hidden_size=256, num_layers=3, bidirectional, dropout=0.3
+- 출력 차원: hidden×2 = 512
+- 시퀀스 방향: (B, C, H, W) → (B, W, C×H)로 재배열 후 LSTM
+
+### CTCHead (Attention Decoder 대체)
+- Linear projection(512 → vocab_size) → **CTC Loss** (blank token = 0)
+- Greedy CTC decode: 연속 중복 제거 + blank 제거 → 최종 문자열
+- **논문**: CTC — https://www.cs.toronto.edu/~graves/icml_2006.pdf (Graves, Connectionist Temporal Classification)
+
+### 학습 설정
 - BATCH_SIZE=8, ACCUM_STEPS=16 (effective batch 128), NUM_WORKERS=4
 - USE_AMP=True, USE_GRADIENT_CHECKPOINTING=True, DROPOUT=0.3
 - DEVICE=cuda:0 (Blackwell)
+- **논문**: CRNN — https://arxiv.org/abs/1507.05717 (An End-to-End Trainable Neural Network for Image-based Sequence Recognition)
 
 ## 학습 세부
 - Epoch 2 val_loss=3.6855
