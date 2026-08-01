@@ -1,7 +1,7 @@
 # DoctorOcr
 
-의사 손글씨 처방전 OCR — CRNN 계열 모델 학습·추론 파이프라인.
-Kaggle RxHandBD 데이터셋(5,578장) 기반 4가지 아키텍처 순차 실험.
+의사 손글씨 처방전 OCR — CRNN 계열 모델 학습·추론 파이프라인
+Kaggle RxHandBD 데이터셋(5,578장) 기반 4가지 아키텍처 순차 실험
 
 ## 프로젝트 구조
 
@@ -37,10 +37,10 @@ DoctorOcr/
 ```
 
 > **주의**: 실제 학습·추론 스크립트는 라이브 작업 디렉토리
-> (`/home/dev/doctor_ocr`, `doctor_ocr_v2`, `doctor_ocr_v2_1`, `doctor_ocr_v2_2`)에서 실행.
-> 그곳에 `dataset/`, `working/checkpoints/`, `char_dict.pkl`, venv, 로그 존재.
-> 본 모노레포는 소스·보고서의 버전 관리용.
-> 스크립트 내 경로는 `/home/dev/doctor_ocr_*` 하드코딩.
+> (`/home/dev/doctor_ocr`, `doctor_ocr_v2`, `doctor_ocr_v2_1`, `doctor_ocr_v2_2`)에서 실행
+> 그곳에 `dataset/`, `working/checkpoints/`, `char_dict.pkl`, venv, 로그 존재
+> 본 모노레포는 소스·보고서의 버전 관리용
+> 스크립트 내 경로는 `/home/dev/doctor_ocr_*` 하드코딩
 
 ## 버전별 결과 요약
 
@@ -54,8 +54,8 @@ DoctorOcr/
 | Best val_loss | 2.7976 | 2.3205 | 2.2795 | **1.0216** |
 | 추론 정확도 | 0% (0/10) | 20% (2/10) | 20% (2/10, 수정 후) | **40% (4/10)** |
 
-- **최고 성능**: v2.2 — CTC Loss + 대용량 배치, val_loss 1.0216, 추론 40%.
-- **핵심 개선 요인**: Attention seq2seq → CTC 전환 (반복 토큰 해결, alignment 불필요).
+- **최고 성능**: v2.2 — CTC Loss + 대용량 배치, val_loss 1.0216, 추론 40%
+- **핵심 개선 요인**: Attention seq2seq → CTC 전환 (반복 토큰 해결, alignment 불필요)
 
 ## 데이터셋
 
@@ -68,16 +68,16 @@ DoctorOcr/
 ## 하드웨어 / 환경
 
 - **GPU**: 2× RTX PRO 6000 Blackwell (192GB VRAM) — **단일 GPU(cuda:0) 사용**
-- **중요**: 학습/추론 스크립트 `CUDA_VISIBLE_DEVICES='0'` 강제.
-  USB4 4060 Ti 참조 전부 제거. Blackwell sm_120 호환은 PyTorch 2.11+cu128/130 필요.
+- **중요**: 학습/추론 스크립트 `CUDA_VISIBLE_DEVICES='0'` 강제
+  USB4 4060 Ti 참조 전부 제거, Blackwell sm_120 호환은 PyTorch 2.11+cu128/130 필요
 - **venv**: v1/v2/v2_1 → `/home/dev/doctor_ocr/venv`,
   v2_1 → `/home/dev/vllm-env` (PyTorch 2.11.0+cu130),
   v2_2 → `/home/dev/doctor_ocr_v2_2/venv`
 
 ## 실행 방법
 
-> 스크립트 내 경로는 라이브 디렉토리(`/home/dev/doctor_ocr_*`) 기준.
-> 모노레포 사본 실행 시 경로 선수정 필요.
+> 스크립트 내 경로는 라이브 디렉토리(`/home/dev/doctor_ocr_*`) 기준
+> 모노레포 사본 실행 시 경로 선수정 필요
 
 ```bash
 # v2.2 학습 (최고 성능 모델)
@@ -97,11 +97,11 @@ cd /home/dev/doctor_ocr && ./venv/bin/python local_infer.py
 
 ## 알려진 이슈 / 교훈
 
-- **v2.1 체크포인트 config 버그**: 학습 시 `hidden_size=384`인데 config엔 `256` 저장.
-  추론 시 `local_infer_v2_1.py:106` `hidden_size=384` 강제로 우회. 근본 원인(저장 로직) 미수정.
-- **Attention 반복 토큰**: teacher forcing 0.5에도 `Deliiiii` 같은 반복 생성 → CTC로 해결.
-- **DataParallel 비효율**: 소규모 모델(12M)에선 단일 GPU + 대용량 배치가 3.3× 빠름.
-- **4개 동시 실행 시 GPU 0 VRAM 92~97GB** 사용 — OOM 위험.
+- **v2.1 체크포인트 config 버그**: 학습 시 `hidden_size=384`인데 config엔 `256` 저장
+  추론 시 `local_infer_v2_1.py:106` `hidden_size=384` 강제로 우회, 근본 원인(저장 로직) 미수정
+- **Attention 반복 토큰**: teacher forcing 0.5에도 `Deliiiii` 같은 반복 생성 → CTC로 해결
+- **DataParallel 비효율**: 소규모 모델(12M)에선 단일 GPU + 대용량 배치가 3.3× 빠름
+- **4개 동시 실행 시 GPU 0 VRAM 92~97GB** 사용 — OOM 위험
 
 ## Git
 
@@ -110,4 +110,4 @@ cd /home/dev/doctor_ocr && ./venv/bin/python local_infer.py
 git add -A && git commit -m "..." && git push origin main
 ```
 
-현재 커밋: `Initial commit` (4 variant mono-repo) + `Add docs: v1 Notion details + v2 report` + README 재작성.
+현재 커밋: `Initial commit` (4 variant mono-repo) + `Add docs: v1 Notion details + v2 report` + README 재작성
