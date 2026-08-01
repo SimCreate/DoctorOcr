@@ -1,7 +1,7 @@
 # DoctorOcr
 
-의사 손글씨 처방전 OCR 프로젝트 — CRNN 계열 모델의 학습·추론 파이프라인.
-Kaggle RxHandBD 데이터셋(5,578장)을 기반으로 4가지 아키텍처 변형을 순차 실험했다.
+의사 손글씨 처방전 OCR — CRNN 계열 모델 학습·추론 파이프라인.
+Kaggle RxHandBD 데이터셋(5,578장) 기반 4가지 아키텍처 순차 실험.
 
 ## 프로젝트 구조
 
@@ -9,7 +9,7 @@ Kaggle RxHandBD 데이터셋(5,578장)을 기반으로 4가지 아키텍처 변�
 
 ```
 DoctorOcr/
-├── README.md                     # 본 파일 (상위 인덱스)
+├── README.md                     # 상위 인덱스 (본 파일)
 ├── .gitignore
 ├── doctor_ocr/                   # v1 — 기준 CRNN (Attention Decoder)
 │   ├── local_train.py
@@ -36,11 +36,11 @@ DoctorOcr/
     └── doctor_ocr_v1_notion.md   # v1 Notion 업로드용 상세
 ```
 
-> **주의**: 각 버전의 실제 학습·추론 스크립트는 **라이브 작업 디렉토리**
-> (`/home/dev/doctor_ocr`, `doctor_ocr_v2`, `doctor_ocr_v2_1`, `doctor_ocr_v2_2`)에서
-> 실행된다. 그곳에 `dataset/`, `working/checkpoints/`, `char_dict.pkl`, venv, 로그가
-> 존재한다. 본 모노레포는 소스와 보고서의 버전 관리용 사본이다.
-> 스크립트 내 경로는 `/home/dev/doctor_ocr_*`를 하드코딩하고 있다.
+> **주의**: 실제 학습·추론 스크립트는 라이브 작업 디렉토리
+> (`/home/dev/doctor_ocr`, `doctor_ocr_v2`, `doctor_ocr_v2_1`, `doctor_ocr_v2_2`)에서 실행.
+> 그곳에 `dataset/`, `working/checkpoints/`, `char_dict.pkl`, venv, 로그 존재.
+> 본 모노레포는 소스·보고서의 버전 관리용.
+> 스크립트 내 경로는 `/home/dev/doctor_ocr_*` 하드코딩.
 
 ## 버전별 결과 요약
 
@@ -54,8 +54,8 @@ DoctorOcr/
 | Best val_loss | 2.7976 | 2.3205 | 2.2795 | **1.0216** |
 | 추론 정확도 | 0% (0/10) | 20% (2/10) | 20% (2/10, 수정 후) | **40% (4/10)** |
 
-- **최고 성능**: v2.2 — CTC Loss + 대용량 배치로 val_loss 1.0216, 추론 40% 달성.
-- **핵심 개선 요인**: Attention seq2seq → CTC 전환 (반복 토큰 문제 해결, alignment 불필요).
+- **최고 성능**: v2.2 — CTC Loss + 대용량 배치, val_loss 1.0216, 추론 40%.
+- **핵심 개선 요인**: Attention seq2seq → CTC 전환 (반복 토큰 해결, alignment 불필요).
 
 ## 데이터셋
 
@@ -63,21 +63,21 @@ DoctorOcr/
 - **고유 문자**: 73자 (알파벳, 숫자, 특수문자)
 - **구조**: `dataset/img/img/` 이미지 + `doctor_handwriting_labels.csv` (filename, label)
 - **입력 크기**: 64×256 RGB (v2.2 기준 IMAGE_HEIGHT=64, IMAGE_WIDTH=256)
-- 원본 데이터/라벨 CSV는 `.gitignore`로 제외 (용량 문제)
+- 원본 데이터/라벨 CSV는 `.gitignore` 제외 (용량 문제)
 
 ## 하드웨어 / 환경
 
 - **GPU**: 2× RTX PRO 6000 Blackwell (192GB VRAM) — **단일 GPU(cuda:0) 사용**
-- **중요**: 학습/추론 스크립트는 `CUDA_VISIBLE_DEVICES='0'` 강제.
-  USB4 4060 Ti 참조는 전부 제거됨. Blackwell sm_120 호환은 PyTorch 2.11+cu128/130 필요.
+- **중요**: 학습/추론 스크립트 `CUDA_VISIBLE_DEVICES='0'` 강제.
+  USB4 4060 Ti 참조 전부 제거. Blackwell sm_120 호환은 PyTorch 2.11+cu128/130 필요.
 - **venv**: v1/v2/v2_1 → `/home/dev/doctor_ocr/venv`,
   v2_1 → `/home/dev/vllm-env` (PyTorch 2.11.0+cu130),
   v2_2 → `/home/dev/doctor_ocr_v2_2/venv`
 
 ## 실행 방법
 
-> 스크립트 내 경로는 라이브 디렉토리(`/home/dev/doctor_ocr_*`) 기준이다.
-> 모노레포 사본을 실행하려면 경로를 먼저 수정해야 한다.
+> 스크립트 내 경로는 라이브 디렉토리(`/home/dev/doctor_ocr_*`) 기준.
+> 모노레포 사본 실행 시 경로 선수정 필요.
 
 ```bash
 # v2.2 학습 (최고 성능 모델)
@@ -97,8 +97,8 @@ cd /home/dev/doctor_ocr && ./venv/bin/python local_infer.py
 
 ## 알려진 이슈 / 교훈
 
-- **v2.1 체크포인트 config 버그**: 학습 시 `hidden_size=384`인데 config엔 `256`으로 저장.
-  추론 시 `local_infer_v2_1.py:106`에서 `hidden_size=384` 강제로 우회. 근본 원인(저장 로직) 미수정.
+- **v2.1 체크포인트 config 버그**: 학습 시 `hidden_size=384`인데 config엔 `256` 저장.
+  추론 시 `local_infer_v2_1.py:106` `hidden_size=384` 강제로 우회. 근본 원인(저장 로직) 미수정.
 - **Attention 반복 토큰**: teacher forcing 0.5에도 `Deliiiii` 같은 반복 생성 → CTC로 해결.
 - **DataParallel 비효율**: 소규모 모델(12M)에선 단일 GPU + 대용량 배치가 3.3× 빠름.
 - **4개 동시 실행 시 GPU 0 VRAM 92~97GB** 사용 — OOM 위험.
@@ -110,4 +110,4 @@ cd /home/dev/doctor_ocr && ./venv/bin/python local_infer.py
 git add -A && git commit -m "..." && git push origin main
 ```
 
-현재 커밋: `Initial commit` (4 variant mono-repo) + `Add docs: v1 Notion details + v2 report`.
+현재 커밋: `Initial commit` (4 variant mono-repo) + `Add docs: v1 Notion details + v2 report` + README 재작성.
