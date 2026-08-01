@@ -1,12 +1,12 @@
 ---
 name: doctor-ocr-v1-report
 category: research
-description: v1 (doctor_ocr) 프로젝트 상세 보고 — 기준 CRNN, 학습 E50 best 2.7976, 추론 0%
+description: v1 (doctor_ocr) 프로젝트 상세 보고 — 기준 CRNN, 학습 E50 완료, best ckpt epoch 30 / 2.7976, 추론 0%
 ---
 
 # v1 (doctor_ocr) — 상세 보고
 
-[확인됨] 학습 완료 — Epoch 50, best val_loss=2.7976 (로그: /home/dev/doctor_ocr/train_bg_1341.log, [DONE] 확인)
+[확인됨] 학습 완료 — Epoch 50 (best 체크포인트 epoch 30), best val_loss=2.7976 (로그: /home/dev/doctor_ocr/train_bg_1341.log, [DONE] 확인)
 [확인됨] 추론 완료 — ACCURACY 0/10 = 0.00% (로그: /home/dev/doctor_ocr/infer_bg_1403.log, proc_64741a6f4a15 exit 0)
 [확인됨] 소스 수정: CUDA_VISIBLE_DEVICES='0' (default='0')
 

@@ -50,7 +50,7 @@ DoctorOcr/
 | 손실 함수 | CrossEntropy | CrossEntropy | CrossEntropy | **CTC Loss** |
 | BATCH | 8 | 96 (AMP) | 40 | 8 (accum 16, eff. 128) |
 | BiLSTM 층수 / hidden | 2 / 256 | 2 / 256 | 3 / 384 | 3 / 256 |
-| Epoch | 50 | 50 | 54+ | 38+ |
+| Epoch (best ckpt) | 30 | 44 | 77 | 40 |
 | Best val_loss | 2.7976 | 2.3205 | 2.2795 | **1.0216** |
 | 추론 정확도 | 0% (0/10) | 20% (2/10) | 20% (2/10, 수정 후) | **40% (4/10)** |
 

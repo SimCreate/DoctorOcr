@@ -1,12 +1,12 @@
 ---
 name: doctor-ocr-v2-2-report
 category: research
-description: v2_2 (doctor_ocr_v2_2) 프로젝트 상세 보고 — v2_2 아키텍처, E38+ best 1.0216, 추론 40%, evaluate.py 포함
+description: v2_2 (doctor_ocr_v2_2) 프로젝트 상세 보고 — v2_2 아키텍처, E40 best 1.0216, 추론 40%, evaluate.py 포함
 ---
 
 # v2_2 (doctor_ocr_v2_2) — 상세 보고
 
-[확인됨] 학습 완료 — Epoch 38+, best val_loss=1.0216 (proc_f089b9d6fb89 exit 0, 로그 3,456,958바이트)
+[확인됨] 학습 완료 — Epoch 40 (best 체크포인트), best val_loss=1.0216 (proc_f089b9d6fb89 exit 0, 로그 3,456,958바이트)
 [확인됨] 추론 완료 — ACCURACY 4/10 = 40.00% (proc_93c913b6e97c exit 0, 최상)
 [확인됨] evaluate.py 수정 완료 (CUDA_VISIBLE_DEVICES='0')
 

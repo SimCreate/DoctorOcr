@@ -171,7 +171,7 @@ scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=NUM_EPOCHS)
 | **BATCH** | 8 | 96 (AMP) | 40 | 8 (accum 16, eff. 128) |
 | **HIDDEN** | 256 | 256 | **384** (체크포인트 256≠384 버그) | 256 |
 | **LAYER** | 2 | 2 | 3 | 3 |
-| **EPOCH** | 50 | 50 | 54+ | 38+ |
+| **EPOCH (best ckpt)** | 30 | 44 | 77 | 40 |
 | **BEST val_loss** | **2.7976** | 2.3205 | 2.2795 | **1.0216** |
 | **추론 정확도** | **0%** | 20% | 20% (수정 후) | **40%** |
 | **손실 함수** | CrossEntropy | CrossEntropy | CrossEntropy | **CTC Loss** |

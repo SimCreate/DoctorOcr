@@ -1,12 +1,12 @@
 ---
 name: doctor-ocr-v2-1-report
 category: research
-description: v2_1 (doctor_ocr_v2_1) 프로젝트 상세 보고 — BiLSTM 3층+Attention, E54 best 2.2795, 추론 20%(수정 후). 체크포인트 config 오류 원인 분석 포함.
+description: v2_1 (doctor_ocr_v2_1) 프로젝트 상세 보고 — BiLSTM 3층+Attention, E77 best 2.2795, 추론 20%(수정 후). 체크포인트 config 오류 원인 분석 포함.
 ---
 
 # v2_1 (doctor_ocr_v2_1) — 상세 보고 (수정 포함)
 
-[확인됨] 학습 완료 — Epoch 54+, best val_loss=2.2795 (proc_494adea73f46 exit 0, 로그 1,868,186바이트)
+[확인됨] 학습 완료 — Epoch 77 (best 체크포인트), best val_loss=2.2795 (proc_494adea73f46 exit 0, 로그 1,868,186바이트)
 [확인됨] 추론 완료(수정 후) — ACCURACY 2/10 = 20.00% (proc_f2f2ff542d5e exit 0, infer_bg_1403_fixed.log)
 [확인됨] 수정: local_infer_v2_1.py:106 hidden_size=384 강제 (체크포인트 config 256 ≠ 모델 384)
 
@@ -39,7 +39,7 @@ description: v2_1 (doctor_ocr_v2_1) 프로젝트 상세 보고 — BiLSTM 3층+A
 ## 학습 세부
 - Epoch 4 val_loss=3.0362 (초기)
 - Epoch 5부터 LR=0.0003, TF_Ratio=0.39
-- Epoch 54+ 진행 중 완료, best=2.2795
+- Epoch 77 (best 체크포인트) best=2.2795
 - 저장: working/checkpoints/best_model.pth (272MB)
 
 ## 추론 — 오류 원인 및 수정

@@ -1,12 +1,12 @@
 ---
 name: doctor-ocr-v2-report
 category: research
-description: v2 (doctor_ocr_v2) 프로젝트 상세 보고 — 개선 CRNN, E50 best 2.3205, 추론 20%
+description: v2 (doctor_ocr_v2) 프로젝트 상세 보고 — 개선 CRNN, 학습 E50 완료, best ckpt epoch 44 / 2.3205, 추론 20%
 ---
 
 # v2 (doctor_ocr_v2) — 상세 보고
 
-[확인됨] 학습 완료 — Epoch 50, best val_loss=2.3205 (proc_b40dad367bcc exit 0, 로그 446,691바이트)
+[확인됨] 학습 완료 — Epoch 50 (best 체크포인트 epoch 44), best val_loss=2.3205 (proc_b40dad367bcc exit 0, 로그 446,691바이트)
 [확인됨] 추론 완료 — ACCURACY 2/10 = 20.00% (proc_24c772884a50 exit 0)
 [확인됨] 소스: local_train.py/local_infer.py 수정 (CUDA_VISIBLE_DEVICES='0')
 
