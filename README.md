@@ -48,7 +48,7 @@ DoctorOcr/
 |---|---|---|---|---|
 | 아키텍처 | CRNN (7CNN + BiLSTM2 + Attn) | 개선 CRNN | BiLSTM 3층 + Attention | CTC 기반 CRNN |
 | 손실 함수 | CrossEntropy | CrossEntropy | CrossEntropy | **CTC Loss** |
-| BATCH | 8 | 96 (AMP) | 40 | 558 |
+| BATCH | 8 | 96 (AMP) | 40 | 8 (accum 16, eff. 128) |
 | BiLSTM 층수 / hidden | 2 / 256 | 2 / 256 | 3 / 384 | 3 / 256 |
 | Epoch | 50 | 50 | 54+ | 38+ |
 | Best val_loss | 2.7976 | 2.3205 | 2.2795 | **1.0216** |

@@ -111,7 +111,7 @@ class CRNN(nn.Module):
 
 | 파라미터 | v1 값 | 비고 |
 |---|---|---|
-| BATCH_SIZE | **8** | v2는 96, v2_2는 558 |
+| BATCH_SIZE | **8** | v2는 96, v2_2는 8 (accum 16, eff. 128) |
 | NUM_EPOCHS | **50** | |
 | LR | **1e-4** | AdamW |
 | WEIGHT_DECAY | **1e-5** | |
@@ -168,14 +168,14 @@ scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=NUM_EPOCHS)
 | 항목 | v1 (`doctor_ocr`) | v2 (`v2`) | v2_1 (`v2_1`) | v2_2 (`v2_2`) |
 |---|---|---|---|---|
 | **아키텍처** | CRNN(7CNN+BiLSTM2+Attn) | 개선 CRNN | BiLSTM 3층 + Attention | v2_2 전용 |
-| **BATCH** | 8 | 96 (AMP) | 40 | 558 |
-| **HIDDEN** | 256 | 256 | **384** (체크포인트 256≠384 버그) | ? |
-| **LAYER** | 2 | 2 | 3 | ? |
+| **BATCH** | 8 | 96 (AMP) | 40 | 8 (accum 16, eff. 128) |
+| **HIDDEN** | 256 | 256 | **384** (체크포인트 256≠384 버그) | 256 |
+| **LAYER** | 2 | 2 | 3 | 3 |
 | **EPOCH** | 50 | 50 | 54+ | 38+ |
 | **BEST val_loss** | **2.7976** | 2.3205 | 2.2795 | **1.0216** |
 | **추론 정확도** | **0%** | 20% | 20% (수정 후) | **40%** |
-| **손실 함수** | CrossEntropy | CrossEntropy | CrossEntropy | CrossEntropy |
-| **CTC** | 미도입 | 미도입 | 미도입 | 미도입 |
+| **손실 함수** | CrossEntropy | CrossEntropy | CrossEntropy | **CTC Loss** |
+| **CTC** | 미도입 | 미도입 | 미도입 | **도입 (CTC)** |
 | **주요 개선** | 기준선 | 배치/AMP | 층수 증가 + 체크포인트 수정 | 아키텍처 변경 |
 
 ---
@@ -248,7 +248,7 @@ scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=NUM_EPOCHS)
 | 항목 | v1 | v2 | v2_1 | v2_2 |
 |---|---|---|---|---|
 | 아키텍처 | CRNN 7CNN+BiLSTM2+Attn | 개선 CRNN | BiLSTM 3층+Attn | v2_2 전용 |
-| BATCH | 8 | 96 (AMP) | 40 | 558 |
+| BATCH | 8 | 96 (AMP) | 40 | 8 (accum 16, eff. 128) |
 | BEST val_loss | 2.7976 | 2.3205 | 2.2795 | 1.0216 |
 | 추론 정확도 | 0% (0/10) | 20% (2/10) | 20% (수정 후) | 40% (4/10) |
 

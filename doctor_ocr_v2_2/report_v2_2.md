@@ -12,13 +12,13 @@ description: v2_2 (doctor_ocr_v2_2) 프로젝트 상세 보고 — v2_2 아키�
 
 ## 아키텍처
 - v2_2 전용 모델 (model_v2_2.py)
-- BATCH_SIZE=558, NUM_WORKERS=4
+- BATCH_SIZE=8, ACCUM_STEPS=16 (effective batch 128), NUM_WORKERS=4
 - USE_AMP=True, USE_GRADIENT_CHECKPOINTING=True, DROPOUT=0.3
 - DEVICE=cuda:0 (Blackwell)
 
 ## 학습 세부
 - Epoch 2 val_loss=3.6855
-- Epoch 3 LR=0.000180, ~28-44 it/s (558 batch)
+- Epoch 3 LR=0.000180, ~28-44 it/s (558 batches/epoch)
 - Best: 1.0216 (4개 중 최상)
 
 ## 추론 세부
@@ -27,9 +27,9 @@ description: v2_2 (doctor_ocr_v2_2) 프로젝트 상세 보고 — v2_2 아키�
 
 ## 핵심
 - 가장 좋은 성능
-- 큰 배치(558) 효율적
+- 큰 유효 배치(8×16=128) 효율적
 - evaluate.py 추가로 평가 기능 강화
 
 ## 한계점
 - 다른 버전과 아키텍처 달라 직접 비교 어려움
-- 558 배치는 VRAM 요구 높음
+- ACCUM_STEPS=16 (유효 배치 128) — 그래디언트 누적 많아 학습 속도 느릴 수 있음

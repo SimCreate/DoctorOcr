@@ -18,7 +18,7 @@ description: >
 - v1 (doctor_ocr): 기준 CRNN, BATCH=8, E50 best 2.7976, 추론 0/10
 - v2 (doctor_ocr_v2): 개선 CRNN, BATCH=96, E50 best 2.3205, 추론 2/10
 - v2_1 (doctor_ocr_v2_1): BiLSTM 3층 + Attention, BATCH=40, E54+ best 2.2795, 추론 2/10 (수정 후)
-- v2_2 (doctor_ocr_v2_2): v2_2 아키텍처, BATCH=558, E38+ best 1.0216 (최상), 추론 4/10
+- v2_2 (doctor_ocr_v2_2): v2_2 아키텍처, BATCH=8(accum16, eff.128), E38+ best 1.0216 (최상), 추론 4/10
 
 ## 2. 학습 결과 (검증된 로그)
 
@@ -43,7 +43,7 @@ description: >
 - v1: 기준 CRNN (BATCH=8) — E50 best 2.7976, 추론 0%. 기준선.
 - v2: 개선 CRNN (BATCH=96, AMP) — E50 best 2.3205, 추론 20%. 가장 효율적.
 - v2_1: BiLSTM 3층+Attention (BATCH=40) — E54+ best 2.2795, 추론 20%(수정). 체크포인트 저장 버그(256≠384) 발견 및 수정.
-- v2_2: v2_2 아키텍처 (BATCH=558) — E38+ best 1.0216(최상), 추론 40%. 최고 성능.
+- v2_2: v2_2 아키텍처 (BATCH=8, accum16) — E38+ best 1.0216(최상), 추론 40%. 최고 성능.
 
 ## 6. 수정 사항 [확인됨]
 

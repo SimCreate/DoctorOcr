@@ -11,8 +11,8 @@ description: v1 (doctor_ocr) 프로젝트 상세 보고 — 기준 CRNN, 학습 
 [확인됨] 소스 수정: CUDA_VISIBLE_DEVICES='0' (default='0')
 
 ## 아키텍처
-- 기준 CRNN (CNN Encoder + BiLSTM + CTC Decoder)
-- BATCH_SIZE=8, NUM_EPOCHS=50, LR=3e-4
+- 기준 CRNN (CNN Encoder + BiLSTM + Attention Decoder)
+- BATCH_SIZE=8, NUM_EPOCHS=50, LR=1e-4
 - DEVICE=cuda:0 (Blackwell cuda0, CUDA_VISIBLE_DEVICES='0')
 - venv: /home/dev/doctor_ocr/venv/bin/python
 
