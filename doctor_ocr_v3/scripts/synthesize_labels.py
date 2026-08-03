@@ -103,13 +103,12 @@ def main():
             dst.write_bytes(f.read_bytes())
     real_df = df2[['filename', 'label', 'source']].copy()
 
-    # 합성 생성
+    # 합성 생성 — 파일명은 고유 인덱스 기반 (라벨 정규화 충돌 방지)
+    # 서로 다른 라벨이 정규화 후 같은 파일명이 되는 사건 방지
     synth_rows = []
-    for label in selected:
+    for k, label in enumerate(selected):
         img = synth_image(str(label), rng)
-        safe = "".join(c for c in str(label) if c.isalnum() or c in "-._")
-        fname = f"{safe or 'label'}__synth.jpg"
-        # 중복 방지 (같은 라벨은 1장이므로 충돌 없지만 안전)
+        fname = f"synth_{k:05d}.jpg"
         img.save(img3 / fname)
         synth_rows.append({'filename': fname, 'label': str(label), 'source': 'synth'})
 
