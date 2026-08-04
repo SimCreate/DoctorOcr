@@ -52,6 +52,9 @@ def parse_args():
     p.add_argument('--char-dict', type=str,
                    default=str(V2_2 / "working" / "char_dict.pkl"))
     p.add_argument('--out', type=str, default=str(CUR / "result_val.csv"))
+    p.add_argument('--fixed-val-csv', type=str, default=None,
+                   help='클린 평가: 평가할 고정 val CSV (data/clean_split/val.csv). '
+                        '지정하면 이 파일의 이미지 전체를 평가 (split 없이)')
     return p.parse_args()
 
 
@@ -83,19 +86,26 @@ def main():
     print(f"[MODEL] epoch={ckpt.get('epoch')}, "
           f"val_loss={ckpt.get('val_loss'):.4f}, vocab={vocab_size}")
 
-    # 데이터 로더 — 학습 시와 동일한 val split (seed 42, 80/20)
+    # 데이터 로더 — 기본: 학습 시와 동일한 val split (seed 42, 80/20)
+    # 클린 평가(--fixed-val-csv): 평가할 val CSV 전체를 그대로 평가 (split 없이)
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
-    full = HandwritingDataset(args.csv, Path(args.img_dir),
-                              char2idx, transform, augment=False)
-    torch.manual_seed(42)
-    train_size = int(0.8 * len(full))
-    _, val = torch.utils.data.random_split(full, [train_size, len(full) - train_size])
-    val_loader = DataLoader(val, batch_size=8, shuffle=False, num_workers=4,
+    if args.fixed_val_csv:
+        val_dataset = HandwritingDataset(args.fixed_val_csv, args.img_dir,
+                                         char2idx, transform, augment=False)
+        print(f"[FIXED-VAL] {args.fixed_val_csv} 전체 {len(val_dataset)}개 평가 (split 없음)")
+    else:
+        full = HandwritingDataset(args.csv, Path(args.img_dir),
+                                  char2idx, transform, augment=False)
+        torch.manual_seed(42)
+        train_size = int(0.8 * len(full))
+        _, val = torch.utils.data.random_split(full, [train_size, len(full) - train_size])
+        val_dataset = val
+        print(f"[DATA] val={len(val_dataset)} samples (seed 42, 80/20 split)")
+    val_loader = DataLoader(val_dataset, batch_size=8, shuffle=False, num_workers=4,
                             pin_memory=True, collate_fn=ctc_collate_fn)
-    print(f"[DATA] val={len(val)} samples")
 
     # 평가 실행 (v2_2의 evaluate_model: CTC loss + decode)
     val_loss, val_acc, predictions = evaluate_model(model, val_loader, device, idx2char)

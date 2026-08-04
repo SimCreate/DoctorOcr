@@ -39,6 +39,9 @@ def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument('--exp', type=int, required=True, choices=[1, 2, 3],
                    help='실험군 번호 (데이터/체크포인트 경로 결정)')
+    p.add_argument('--clean', action='store_true',
+                   help='클린 스플릿 모드: train=experiment_N_clean 전체, '
+                        'val=data/clean_split/val.csv 고정 (리키지 방지 재학습)')
     p.add_argument('--device', type=str, default='1',
                    help='CUDA_VISIBLE_DEVICES (기본 1 = GPU1 Max-Q)')
     p.add_argument('--epochs', type=int, default=80)
@@ -57,11 +60,16 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.device
 # ============================================================
 V3 = Path("/home/dev/DoctorOcr/doctor_ocr_v3")
 EXP = args.exp
-DATA_ROOT = V3 / "data" / f"experiment_{EXP}"
+CLEAN = args.clean
+DATA_ROOT = V3 / "data" / (f"experiment_{EXP}" if not CLEAN else f"experiment_{EXP}_clean")
 IMG_DIR = DATA_ROOT / "img" / "img"
 LABEL_CSV = DATA_ROOT / "combined_labels.csv"
 
-WORK_DIR = V3 / "working" / f"exp{EXP}"
+# 클린 모드: val은 공용 clean_split/val.csv 고정 (이미지는 원본 v2 dataset에서 직접 읽음)
+CLEAN_VAL_CSV = V3 / "data" / "clean_split" / "val.csv"
+CLEAN_VAL_IMG = Path("/home/dev/doctor_ocr_v2/dataset/img/img")
+
+WORK_DIR = V3 / "working" / (f"exp{EXP}" if not CLEAN else f"exp{EXP}_clean")
 CHECKPOINT_DIR = WORK_DIR / "checkpoints"
 CHAR_DICT_PATH = WORK_DIR / "char_dict.pkl"
 BEST_MODEL_PATH = CHECKPOINT_DIR / "best_model.pth"
@@ -302,8 +310,14 @@ def main():
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
 
-    df = pd.read_csv(LABEL_CSV)
-    labels = df['label'].tolist()
+    if CLEAN:
+        # char_dict은 원본 전체 라벨 기준 (val의 신규 라벨 문자 커버)
+        df_all = pd.read_csv("/home/dev/doctor_ocr_v2/dataset/combined_labels.csv")
+        labels = df_all['label'].tolist()
+        print(f"[CLEAN] char_dict 기준: 원본 전체 {len(df_all)}행 (val 라벨 문자 포함)")
+    else:
+        df = pd.read_csv(LABEL_CSV)
+        labels = df['label'].tolist()
     char2idx, idx2char = build_char_dict(labels)
     vocab_size = len(char2idx)
     print(f"[VOCAB] Size: {vocab_size}, blank_idx={CTC_BLANK}")
@@ -317,14 +331,28 @@ def main():
         transforms.Normalize((0.5,), (0.5,))
     ])
 
-    full_dataset = HandwritingDataset(LABEL_CSV, IMG_DIR, char2idx, transform, augment=True)
-
-    train_size = int(0.8 * len(full_dataset))
-    val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        full_dataset, [train_size, val_size],
-        generator=torch.Generator().manual_seed(42)  # 실험군 간 동일 분할
-    )
+    if CLEAN:
+        # 클린 모드: train = 실험군 CSV 전체(증강/합성 포함), val = 공용 clean_split/val.csv
+        train_dataset = HandwritingDataset(LABEL_CSV, IMG_DIR, char2idx, transform,
+                                           augment=True)  # 온디스크 증강 학습; val augment=False
+        val_dataset = HandwritingDataset(CLEAN_VAL_CSV, str(CLEAN_VAL_IMG), char2idx, transform,
+                                         augment=False)
+        print(f"[CLEAN] train={len(train_dataset)} (전체, val 제외) / val={len(val_dataset)} (고정 클린 split)")
+        # 리키지 구조 검증: train 파일명 ∩ val 파일명 = 0
+        train_fnames = set(train_dataset.df['filename'])
+        val_fnames = set(val_dataset.df['filename'])
+        leak = train_fnames & val_fnames
+        if leak:
+            raise RuntimeError(f"[LEAK] train∩val = {len(leak)} — 클린 split 위반, 중단")
+        print(f"[CLEAN] 리키지 검증: train∩val = {len(leak)} (0이어야 함)")
+    else:
+        full_dataset = HandwritingDataset(LABEL_CSV, IMG_DIR, char2idx, transform, augment=True)
+        train_size = int(0.8 * len(full_dataset))
+        val_size = len(full_dataset) - train_size
+        train_dataset, val_dataset = torch.utils.data.random_split(
+            full_dataset, [train_size, val_size],
+            generator=torch.Generator().manual_seed(42)  # 실험군 간 동일 분할
+        )
 
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
                               num_workers=NUM_WORKERS, pin_memory=PIN_MEMORY, collate_fn=ctc_collate_fn)
