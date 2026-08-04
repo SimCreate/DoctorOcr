@@ -47,6 +47,10 @@ def parse_args():
                    default=str(V2_2 / "working" / "checkpoints" / "best_model.pth"))
     p.add_argument('--csv', type=str,
                    default=str(V2_2 / "dataset" / "combined_labels.csv"))
+    p.add_argument('--img-dir', type=str,
+                   default=str(V2_2 / "dataset" / "img" / "img"))
+    p.add_argument('--char-dict', type=str,
+                   default=str(V2_2 / "working" / "char_dict.pkl"))
     p.add_argument('--out', type=str, default=str(CUR / "result_val.csv"))
     return p.parse_args()
 
@@ -63,7 +67,7 @@ def main():
     vocab_size = ckpt.get('vocab_size')
 
     # char_dict
-    with open(V2_2 / "working" / "char_dict.pkl", 'rb') as f:
+    with open(Path(args.char_dict), 'rb') as f:
         char_dict = pickle.load(f)
     idx2char = char_dict['idx2char']
     char2idx = char_dict['char2idx']
@@ -84,7 +88,7 @@ def main():
         transforms.ToTensor(),
         transforms.Normalize((0.5,), (0.5,))
     ])
-    full = HandwritingDataset(args.csv, V2_2 / "dataset" / "img" / "img",
+    full = HandwritingDataset(args.csv, Path(args.img_dir),
                               char2idx, transform, augment=False)
     torch.manual_seed(42)
     train_size = int(0.8 * len(full))
