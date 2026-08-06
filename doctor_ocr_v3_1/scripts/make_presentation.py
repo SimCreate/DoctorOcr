@@ -13,7 +13,7 @@ from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 
-OUT = Path("/home/dev/DoctorOcr/doctor_ocr_v3_1/DoctorOcr_발표_20260807.pptx")
+OUT = Path("/home/dev/DoctorOcr/DoctorOcr_발표_20260807.pptx")
 
 # ---- 팔레트 ----
 DARK   = RGBColor(0x1E, 0x1E, 0x2E)

@@ -13,6 +13,7 @@ Kaggle RxHandBD 데이터셋(5,578장) 기반, v1 → v3_1 순차 실험 (모노
 ```
 DoctorOcr/
 ├── README.md                     # 상위 인덱스 (본 파일)
+├── DoctorOcr_발표_20260807.pptx  # 발표 PPT (v3_1 make_presentation.py로 생성)
 ├── .gitignore
 ├── doctor_ocr/                   # v1 — 기준 CRNN (Attention Decoder)
 │   ├── local_train.py / local_infer.py
@@ -29,7 +30,7 @@ DoctorOcr/
 │   ├── scripts/
 │   │   ├── train_v3_1.py         #   학습 (v2.1 attention + exp2_clean 13,386장)
 │   │   ├── eval_v3_1.py          #   beam search 평가 (클린 val 1,116장)
-│   │   └── make_presentation.py  #   발표 PPT 생성
+│   │   └── make_presentation.py  #   발표 PPT 생성 → 루트/DoctorOcr_발표_*.pptx
 │   ├── evaluate/                 # 평가 레이어 (기본 지표 + v3_1 고유 확장)
 │   │   ├── metrics.py / aggregate.py / acceptance.py   # + beam oracle / 반복토큰
 │   │   └── result_*.csv          #   평가 결과
@@ -158,6 +159,13 @@ CUDA_VISIBLE_DEVICES=1 venv/bin/python scripts/eval_v3_1.py \
 ```bash
 cd /home/dev/DoctorOcr/doctor_ocr_v3_1
 venv/bin/python -m streamlit run utils/result_viewer.py
+```
+
+### v3_1 — 발표 PPT 생성 (→ 루트)
+```bash
+cd /home/dev/DoctorOcr/doctor_ocr_v3_1
+venv/bin/python scripts/make_presentation.py
+# 산출물: /home/dev/DoctorOcr/DoctorOcr_발표_20260807.pptx (루트)
 ```
 
 - **v3_1 학습 산출물**: val_loss 최소 시 `working/checkpoints/best_model.pth` 저장 (epoch/optimizer/config 포함)
