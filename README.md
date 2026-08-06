@@ -117,9 +117,22 @@ v3_1의 평가 레이어(`evaluate/`)가 사용하는 지표. 의료 처방전 O
 
 - **소스**: Kaggle RxHandBD — 의사 처방전 손글씨 5,578장 (Train 5,000 + Test 400)
 - **고유 문자**: 73자 (알파벳, 숫자, 특수문자)
-- **구조**: `dataset/img/img/` 이미지 + `combined_labels.csv` (filename, label)
-- **원본 이미지**: `/home/dev/doctor_ocr_v2/dataset/img/img/` (5,578장, 절대 수정 금지)
-- **v3_1 학습 데이터**: `doctor_ocr_v3_1/data/exp2_clean/` — 원본 4,462 + 실사 증강 2배 (13,386장)
+- **원본 정리·공용**: v2부터 원본 5,578장을 `dataset/img/img/` + `combined_labels.csv`로 정리 (v2/v2.1/v2.2/v3_1 공용)
+
+**버전별 데이터셋 차이**:
+
+| 구분 | v1 | v2 / v2.1 / v2.2 | v3_1 |
+|---|---|---|---|
+| **실학습 데이터** | **89장** | 5,578장 (원본 정리) | 13,386장 |
+| 이미지 디렉토리 | 4,769장 (오염·무라벨 포함) | 5,578장 | 13,386장 |
+| 라벨 파일 | `doctor_handwriting_labels.csv` | `combined_labels.csv` | `exp2_clean/` |
+| split | random_split (80/20) | random_split | **클린 고정 split** |
+| train / val | 71 / **18장** | ~4,462 / ~1,116장 | **13,386 / 1,116장** |
+
+- **v1 부실 원인**: 이미지 디렉토리에 4,769장이 있었지만, 학습이 참조한 라벨 CSV(`doctor_handwriting_labels.csv`)는 **89장만 매핑** — 즉 실학습 89장 (train 71 / val 18). 여기에 Windows 중복(`- Copy.jpg`), 휴지통(`.trashed-`), `rxhandbd/train·test` 하위폴더가 마구 섞인 채 random_split이라 val 18장으론 평가 신뢰도가 사실상 없었다.
+- **v2에서 정비**: 원본 5,578장 전체를 `combined_labels.csv`로 정리·통일 → 5,578장으로 재학습 (v2/v2.1/v2.2/v3_1 공용 원본).
+- **v2 → v3_1 (증강)**: v3 실험에서 원본 4,462장(clean train)에 실사 증강 2배(회전±5°, 스케일, 밝기, 노이즈)를 더해 `exp2_clean` 13,386장. v3_1은 이 **전체(13,386)를 train**으로 사용. 원본만 쓴 `exp1_clean`과 대조해 증강 효과(+2.2p) 측정 — 상세는 [Legacy 기록](#legacy-기록).
+- **클린 split**: v3_1부터 원본 80/20을 먼저 고정 분리 후 train에만 증강 — val 1,116장이 어떤 train에도 포함되지 않게 보장 (리키지 차단).
 - 원본 데이터/라벨 CSV는 `.gitignore` 제외 (용량 문제)
 
 ## 실행 방법
