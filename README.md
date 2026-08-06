@@ -94,7 +94,6 @@ DoctorOcr/
 |---|---|---|
 | CRNN | An End-to-End Trainable Neural Network for Image-based Sequence Recognition (Shi et al., 2015) | https://arxiv.org/abs/1507.05717 |
 | CTC | Connectionist Temporal Classification (Graves, 2006) | https://www.cs.toronto.edu/~graves/icml_2006.pdf |
-| Attention | Neural Machine Translation by Jointly Learning to Align and Translate (Bahdanau et al., 2014) | https://arxiv.org/abs/1409.0473 |
 | SE Block | Squeeze-and-Excitation Networks (Hu et al., 2017) | https://arxiv.org/abs/1709.01507 |
 
 ## 데이터셋
