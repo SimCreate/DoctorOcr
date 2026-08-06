@@ -4,7 +4,7 @@ predictions: [{'true': str, 'pred': str, 'label': str}, ...]
 """
 from collections import defaultdict
 
-from metrics import cer, exact_match, freq_group
+from metrics import cer, exact_match, freq_group, beam_oracle
 
 GROUPS = ('high', 'mid', 'low')
 
@@ -41,3 +41,25 @@ def summarize(acc):
             'avg_cer': d['cer_sum'] / d['total'] if d['total'] else None,
         }
     return out
+
+
+# ============================================================
+# v3_1 전용 확장: beam oracle 집계
+# ============================================================
+
+def oracle_group_predictions(predictions, label_counts):
+    """빈도그룹별 beam oracle 정확도 집계.
+
+    predictions: [{'true','label', 'candidates': [str,...]}, ...]
+      - candidates = beam search top-k 후보 문자열 리스트
+      - oracle = candidates에 정답이 포함되면 correct
+    반환: summarize()와 동일 형태 {group: {total, correct, acc, avg_cer}}
+    """
+    acc = {g: {'total': 0, 'correct': 0, 'cer_sum': 0.0} for g in GROUPS}
+    for p in predictions:
+        g = freq_group(label_counts.get(p['label'], 1))
+        acc[g]['total'] += 1
+        if beam_oracle(p['true'], p.get('candidates', [])):
+            acc[g]['correct'] += 1
+        acc[g]['cer_sum'] += cer(p['true'], p.get('pred', ''))
+    return acc

@@ -24,10 +24,10 @@ sys.path.insert(0, str(V3_1 / "scripts"))
 
 from model_v2_1 import CRNN, decode_sequence, MAX_LABEL_LENGTH
 
-# ---- v3_1 자체 지표 모듈 (v3에서 복제, 자립) ----
+# ---- v3_1 자체 지표 모듈 (기본 지표는 v3에서 복제, v3_1 전용 확장 지표 포함) ----
 sys.path.insert(0, str(V3_1 / "evaluate"))
-from metrics import cer                      # noqa: E402
-from aggregate import group_predictions, summarize  # noqa: E402
+from metrics import cer, beam_oracle, has_repetition     # noqa: E402
+from aggregate import group_predictions, summarize, oracle_group_predictions  # noqa: E402
 from acceptance import acceptance_report, overall_cer, acceptance  # noqa: E402
 
 
@@ -98,13 +98,21 @@ def main():
             img = load_img(img_path)
             img_t = torch.from_numpy(img).permute(2, 0, 1).float() / 255.0
             img_t = img_t.unsqueeze(0).to(device)   # [1,3,H,W]
-            pred_tokens = model.predict(img_t, beam_width=args.beam)  # [1, seq_len]
-            pred_str = decode_sequence(pred_tokens[0].cpu().tolist(), idx2char)
             gt = str(row['label']) if 'label' in val_df.columns else str(row[1])
+
+            # top-1 + top-k 후보 (oracle 분석용)
+            beam_tokens = model.predict(img_t, beam_width=args.beam, return_beams=True)  # list[list[int]]
+            pred_str = decode_sequence(beam_tokens[0], idx2char)
+            candidates = [decode_sequence(toks, idx2char) for toks in beam_tokens]
+            oracle = beam_oracle(gt, candidates)
+            rep = has_repetition(pred_str)
+
             rows.append({'true': gt, 'pred': pred_str, 'match': gt == pred_str,
-                         'label': gt, 'path': str(img_path)})
+                         'label': gt, 'path': str(img_path),
+                         'oracle': oracle, 'repetition': rep,
+                         'candidates': '|'.join(candidates)})
             if (i + 1) % 200 == 0:
-                print(f"  evaluated {i+1}/{len(val_df)}  (e.g. {gt!r} -> {pred_str!r})")
+                print(f"  evaluated {i+1}/{len(val_df)}  (e.g. {gt!r} -> {pred_str!r} {'' if oracle else '(oracle miss)'})")
 
     df = pd.DataFrame(rows)
     df['cer'] = df.apply(lambda r: cer(r['true'], r['pred']), axis=1)
@@ -134,6 +142,20 @@ def main():
         acc_str = f"{s['acc']:.1%}" if s['acc'] is not None else 'N/A'
         cer_str = f"{s['avg_cer']:.1%}" if s['avg_cer'] is not None else 'N/A'
         print(f"  {g:5s} total={total:4d}  exact_acc={acc_str:>7s}  avg_cer={cer_str}")
+
+    # ---- v3_1 전용 확장: beam oracle + 반복토큰 통계 ----
+    oracle_acc = oracle_group_predictions(predictions, label_counts)
+    osumm = summarize(oracle_acc)
+    print("\n=== [BEAM ORACLE (top-{} 후보 내 정답 포함)] ===".format(args.beam))
+    for g in ('high', 'mid', 'low'):
+        s = osumm[g]
+        acc_str = f"{s['acc']:.1%}" if s['acc'] is not None else 'N/A'
+        print(f"  {g:5s} oracle_acc={acc_str:>7s}  (total={s['total']})")
+
+    n_rep = sum(1 for p in predictions if p.get('repetition', False))
+    n_oracle_gain = sum(1 for p in predictions if p.get('oracle', False) and not p.get('match', False))
+    print(f"\n=== [REPETITION] 반복토큰(연속동일문자≥3) 비율: {n_rep}/{len(predictions)} = {n_rep/len(predictions):.1%}")
+    print(f"=== [ORACLE GAIN] top-1은 틀렸으나 후보에 정답 있음: {n_oracle_gain}장 (전체 {n_oracle_gain/len(predictions):.1%})")
 
     passed, details = acceptance(summ['high'], predictions)
     print(f"\n{acceptance_report(passed, details)}")

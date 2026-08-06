@@ -144,8 +144,13 @@ class AttentionDecoder(nn.Module):
         outputs = torch.cat(outputs, dim=1)
         return outputs
 
-    def beam_search(self, encoder_out, beam_width=5, max_len=None):
-        """Beam search decoding - 단일 샘플만 처리"""
+    def beam_search(self, encoder_out, beam_width=5, max_len=None, return_beams=False):
+        """Beam search decoding - 단일 샘플만 처리
+
+        return_beams=False (기본): 최고 점수 1개 시퀀스만 반환 (기존 동작, top-1).
+        return_beams=True:  top-k 후보 토큰 시퀀스 리스트 반환 (중복 제거,
+                            각 원소는 EOS 이전까지의 token list). beam oracle용.
+        """
         if max_len is None:
             max_len = self.max_len
 
@@ -186,6 +191,23 @@ class AttentionDecoder(nn.Module):
             # Keep top beam_width sequences
             beam = sorted(new_beam, key=lambda x: x[1], reverse=True)[:beam_width]
 
+        if return_beams:
+            # top-k 후보 토큰 시퀀스 리스트 (중복 제거, EOS 전까지만)
+            seen = set()
+            cands = []
+            for seq, _score, _h in beam:
+                toks = seq[0].tolist()
+                # EOS 이후 제거
+                cut = []
+                for t in toks:
+                    if t == SPECIAL_TOKENS['<EOS>']:
+                        break
+                    cut.append(t)
+                key = tuple(cut)
+                if key not in seen:
+                    seen.add(key)
+                    cands.append(cut)
+            return cands
         return beam[0][0]
 
 
@@ -210,14 +232,17 @@ class CRNN(nn.Module):
         out = self.decoder(feat, targets, teacher_forcing_ratio)
         return out
 
-    def predict(self, x, beam_width=5):
-        """Beam search 기반 예측"""
+    def predict(self, x, beam_width=5, return_beams=False):
+        """Beam search 기반 예측
+
+        return_beams=False (기본): top-1 token 시퀀스 반환 (기존 동작).
+        return_beams=True:        top-k 후보 token 시퀀스 리스트 반환 (oracle용).
+        """
         self.eval()
         with torch.no_grad():
             feat = self.encoder(x)
             feat = self.rnn(feat)
-            beam_result = self.decoder.beam_search(feat, beam_width=beam_width)
-            return beam_result
+            return self.decoder.beam_search(feat, beam_width=beam_width, return_beams=return_beams)
 
 
 # ============================================================

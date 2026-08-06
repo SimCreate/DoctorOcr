@@ -68,3 +68,36 @@ def freq_group(count: int) -> str:
         return 'mid'
     else:
         return 'low'
+
+
+# ============================================================
+# v3_1 전용 확장 지표 (attention beam search 특성 분석)
+# ============================================================
+
+def beam_oracle(true: str, candidates) -> bool:
+    """Beam oracle: top-k 후보 중 정답이 포함돼 있는가.
+
+    candidates: beam search의 top-k 후보 문자열 리스트.
+    top-1이 틀렸어도 후보 k개 안에 정답이 있으면 True — '거의 맞았나'를 판단.
+    """
+    return true in candidates
+
+
+def has_repetition(pred: str, min_run: int = 3) -> bool:
+    """반복토큰 감지: 같은 문자가 min_run(기본 3)회 이상 연속이면 True.
+
+    Attention의 전형적 실패 패턴 'Deliiiii' 식 반복 생성 탐지용.
+    """
+    if not pred:
+        return False
+    prev = pred[0]
+    run = 1
+    for ch in pred[1:]:
+        if ch == prev:
+            run += 1
+            if run >= min_run:
+                return True
+        else:
+            prev = ch
+            run = 1
+    return False

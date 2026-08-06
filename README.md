@@ -30,11 +30,11 @@ DoctorOcr/
 │   │   ├── train_v3_1.py         #   학습 (v2.1 attention + exp2_clean 13,386장)
 │   │   ├── eval_v3_1.py          #   beam search 평가 (클린 val 1,116장)
 │   │   └── make_presentation.py  #   발표 PPT 생성
-│   ├── evaluate/                 # 자체 평가 레이어
-│   │   ├── metrics.py / aggregate.py / acceptance.py
+│   ├── evaluate/                 # 평가 레이어 (기본 지표 + v3_1 고유 확장)
+│   │   ├── metrics.py / aggregate.py / acceptance.py   # + beam oracle / 반복토큰
 │   │   └── result_*.csv          #   평가 결과
-│   ├── utils/result_viewer.py    #   Streamlit 정성 분석 뷰어
-│   ├── model/model_v2_1.py       # v2.1 모델 복제 (자립)
+│   ├── utils/result_viewer.py    #   Streamlit 정성 분석 뷰어 (v3_1 고유)
+│   ├── model/model_v2_1.py       # v2.1 모델 + beam 후보 반환 확장 (v3_1 고유)
 │   ├── data/                     # exp2_clean + clean_split (로컬 복사본)
 │   ├── reports/                  # 평가 보고서
 │   └── venv/                     # 전용 venv (torch 2.13.0+cu132)
@@ -56,6 +56,7 @@ DoctorOcr/
 
 - 고빈도 단어는 그럭저럭 인식하나(54.8%), 중·저빈도 붕괴 (중 3.2% / 저 0.4%)로 CER이 높음.
 - 학습 로그 acc(43.1%) ≠ 실제 디코딩(30.4%) — 평가는 항상 디코더 재측정으로 판단.
+- **beam oracle** (top-5 후보에 정답 포함): 42.6% — top-1보다 +12.2p. 고빈도는 후보까지 72.3%지만, 중·저빈도는 후보에도 없음 (인코더가 못 읽음).
 - 수용기준(고빈도 ≥90%, CER ≤20%) 미충족. 통과하려면 **라벨 오류 정제**나 아키텍처 개선 우선.
 - 상세: `doctor_ocr_v3_1/reports/eval_v3_1_20260806.md`
 
