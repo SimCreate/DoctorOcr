@@ -91,7 +91,7 @@ tail -f logs/train_v3_1.log
 
 ```
 doctor_ocr_v3_1/
-├── model/model_v2_1.py      # v2.1 모델 복제본 (원본 수정 금지)
+├── model/model_v3_1.py      # v2.1 기반 모델 + beam 후보 반환 확장 (v3_1 전용)
 ├── scripts/train_v3_1.py    # 재학습 스크립트 (v2.1 기반 + val 고정 + 증강 off)
 ├── data/{exp2_clean, clean_split}   # v3 심볼릭 링크
 ├── working/                 # 체크포인트 (gitignore)

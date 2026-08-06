@@ -35,7 +35,7 @@ DoctorOcr/
 │   │   ├── metrics.py / aggregate.py / acceptance.py   # + beam oracle / 반복토큰
 │   │   └── result_*.csv          #   평가 결과
 │   ├── utils/result_viewer.py    #   Streamlit 정성 분석 뷰어 (v3_1 고유)
-│   ├── model/model_v2_1.py       # v2.1 모델 + beam 후보 반환 확장 (v3_1 고유)
+│   ├── model/model_v3_1.py       # v2.1 기반 + beam 후보 반환 확장 (v3_1 전용)
 │   ├── data/                     # exp2_clean + clean_split (로컬 복사본)
 │   ├── reports/                  # 평가 보고서
 │   └── venv/                     # 전용 venv (torch 2.13.0+cu132)

@@ -49,7 +49,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = args.device
 # v3_1 자체 모델 정의
 V3_1 = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(V3_1 / "model"))
-from model_v2_1 import (
+from model_v3_1 import (
     CRNN, build_char_dict, encode_label, decode_sequence,
     MAX_LABEL_LENGTH, IMAGE_HEIGHT, IMAGE_WIDTH, SPECIAL_TOKENS
 )

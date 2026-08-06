@@ -22,7 +22,7 @@ V3_1 = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(V3_1 / "model"))
 sys.path.insert(0, str(V3_1 / "scripts"))
 
-from model_v2_1 import CRNN, decode_sequence, MAX_LABEL_LENGTH
+from model_v3_1 import CRNN, decode_sequence, MAX_LABEL_LENGTH
 
 # ---- v3_1 자체 지표 모듈 (기본 지표는 v3에서 복제, v3_1 전용 확장 지표 포함) ----
 sys.path.insert(0, str(V3_1 / "evaluate"))
