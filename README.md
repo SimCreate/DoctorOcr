@@ -27,17 +27,11 @@ DoctorOcr/
 │   └── report_v2_1.md
 ├── doctor_ocr_v3_1/              # v3_1 — ★ 현재 메인 (attention 디코더 + 증강 데이터, 자립)
 │   ├── DESIGN.md                 # 설계/가설/데이터 구성
-│   ├── scripts/
-│   │   ├── train_v3_1.py         #   학습 (v2.1 attention + exp2_clean 13,386장)
-│   │   └── eval_v3_1.py          #   beam search 평가 (클린 val 1,116장)
-│   ├── evaluate/                 # 평가 레이어 (기본 지표 + v3_1 고유 확장)
-│   │   ├── metrics.py / aggregate.py / acceptance.py   # + beam oracle / 반복토큰
-│   │   └── result_*.csv          #   평가 결과
-│   ├── utils/result_viewer.py    #   Streamlit 정성 분석 뷰어 (v3_1 고유)
+│   ├── scripts/                  # train_v3_1.py(학습) · eval_v3_1.py(평가)
+│   ├── evaluate/                 # metrics·aggregate·acceptance (+beam oracle/반복토큰)
+│   ├── utils/result_viewer.py    # Streamlit 정성 분석 뷰어 (v3_1 고유)
 │   ├── model/model_v3_1.py       # v2.1 기반 + beam 후보 반환 확장 (v3_1 전용)
-│   ├── data/                     # exp2_clean + clean_split (로컬 복사본)
-│   ├── reports/                  # 평가 보고서
-│   └── venv/                     # 전용 venv (torch 2.13.0+cu132)
+│   └── reports/                  # 평가 보고서
 └── legacy/                       # ★ 보관 — 상세는 하단 [Legacy 기록]
     ├── doctor_ocr_v2_2/
     └── doctor_ocr_v3/
