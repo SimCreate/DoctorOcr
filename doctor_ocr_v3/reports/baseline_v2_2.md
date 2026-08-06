@@ -43,5 +43,5 @@
 ## 실행 명령
 ```bash
 cd /home/dev/DoctorOcr/doctor_ocr_v3/evaluate
-/home/dev/doctor_ocr_v2_2/venv/bin/python run_eval.py
+venv/bin/python run_eval.py
 ```

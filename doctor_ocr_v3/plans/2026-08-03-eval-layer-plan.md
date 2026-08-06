@@ -10,7 +10,7 @@
 **Tech Stack:** Python 3.13, torch 2.13.0+cu132, pandas, numpy, cv2 (기존 v2_2 venv 재사용). FastDTW/rapidfuzz 등 **추가 설치 없음** — CER은 Levenshtein distance 표준 구현 사용.
 
 **환경:**
-- venv: `/home/dev/doctor_ocr_v2_2/venv/` (torch 2.13.0+cu132, py3.13.7)
+- venv: `/home/dev/DoctorOcr/doctor_ocr_v3/venv/` (torch 2.13.0+cu132, py3.13.7)
 - 모델: `/home/dev/doctor_ocr_v2_2/model/model_v2_2.py` (CTCModel — CNN SEBlock + BiLSTM + CTC Head)
 - 데이터: `/home/dev/doctor_ocr_v2_2/dataset/` (심볼릭 링크 → v2 dataset)
 - val split: seed 42, 80/20, torch.manual_seed(42) (기존 evaluate.py와 동일)
@@ -139,13 +139,13 @@ def test_freq_group():
 
 **Step 3: 테스트 실행 — 실패 확인 (의도적)**
 
-Run: `cd /home/dev/DoctorOcr/doctor_ocr_v3/evaluate && /home/dev/doctor_ocr_v2_2/venv/bin/python -m pytest test_metrics.py -v`
+Run: `cd /home/dev/DoctorOcr/doctor_ocr_v3/evaluate && ../venv/bin/python -m pytest test_metrics.py -v`
 Expected: FAIL — "ModuleNotFoundError: No module named 'metrics'" (아직 파일 없음)
 
 **Step 4: 실제 구현 파일 생성 후 pass 확인**
 
 위 metrics.py를 실제로 저장하고:
-Run: `/home/dev/doctor_ocr_v2_2/venv/bin/python -m pytest test_metrics.py -v`
+Run: `venv/bin/python -m pytest test_metrics.py -v`
 Expected: 6 passed
 
 **Step 5: 커밋**
@@ -388,7 +388,7 @@ if __name__ == '__main__':
 ```
 
 **Step 2: 검증 실행**
-Run: `/home/dev/doctor_ocr_v2_2/venv/bin/python run_eval.py`
+Run: `venv/bin/python run_eval.py`
 Expected:
 - val 1,115샘플 평가 완료
 - 빈도그룹별 acc/CER 출력
@@ -413,7 +413,7 @@ Expected:
 **Step 1: README에 사용법, 지표 정의, 수용기준, 실행 명령 기록**
 
 **Step 2: 전체 테스트 재실행**
-Run: `cd /home/dev/DoctorOcr/doctor_ocr_v3/evaluate && /home/dev/doctor_ocr_v2_2/venv/bin/python -m pytest -v`
+Run: `cd /home/dev/DoctorOcr/doctor_ocr_v3/evaluate && ../venv/bin/python -m pytest -v`
 Expected: 전부 pass
 
 **Step 3: 커밋** (README + 테스트)

@@ -8,7 +8,7 @@
 **Architecture:** 온디스크 생성 방식. 각 실험군은 독립 `data/experiment_N/` 폴더에 CSV + 이미지 배치로 구성. 학습 스크립트가 이 폴더를 읽기만 하도록. 합성 샘플은 CSV에 `source` 컬럼(`real` / `aug` / `synth`)으로 마킹 → 학습은 섞되 평가/분석시 분리 집계 가능.
 
 **환경:**
-- venv: `/home/dev/doctor_ocr_v2_2/venv/` (Pillow 12.2.0 있음)
+- venv: `/home/dev/DoctorOcr/doctor_ocr_v3/venv/` (Pillow 12.2.0 있음)
 - 원본 데이터: `/home/dev/doctor_ocr_v2/dataset/` (읽기 전용)
 - 폰트: `/usr/share/fonts/truetype/dejavu/` (DejaVu 시리즈)
 - 디스크: /home/dev에 159G 여유

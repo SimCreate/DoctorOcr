@@ -12,7 +12,7 @@ v2_2 local_train_v2_2.py와 동일한 로직/하이퍼파라미터를 유지하�
 GPU: GPU1 Max-Q (CUDA_VISIBLE_DEVICES=1), vLLM과 공존. 반드시 백그라운드로.
 
 실행:
-  /home/dev/doctor_ocr_v2_2/venv/bin/python train_exp.py --exp 1 \
+  venv/bin/python train_exp.py --exp 1 \
       > logs/train_exp1.log 2>&1 &
 """
 import os
@@ -74,8 +74,8 @@ CHECKPOINT_DIR = WORK_DIR / "checkpoints"
 CHAR_DICT_PATH = WORK_DIR / "char_dict.pkl"
 BEST_MODEL_PATH = CHECKPOINT_DIR / "best_model.pth"
 
-# v2_2 모델 정의 재사용
-sys.path.insert(0, "/home/dev/doctor_ocr_v2_2/model")
+# v3 자체 모델 정의 (v2_2에서 복제, 자립)
+sys.path.insert(0, str(V3 / "model"))
 from model_v2_2 import (
     CRNN, build_char_dict, encode_label, decode_sequence,
     MAX_LABEL_LENGTH, IMAGE_HEIGHT, IMAGE_WIDTH, CTC_BLANK, SPECIAL_TOKENS

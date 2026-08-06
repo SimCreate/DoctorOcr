@@ -10,11 +10,11 @@ from pathlib import Path
 import pandas as pd
 import torch
 
-V2_2 = Path("/home/dev/doctor_ocr_v2_2")
-sys.path.insert(0, str(V2_2 / "model"))
-sys.path.insert(0, str(V2_2))
+V3 = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(V3 / "model"))
+sys.path.insert(0, str(V3 / "evaluate"))
 from model_v2_2 import CRNN, build_char_dict, MAX_LABEL_LENGTH  # noqa: E402
-from evaluate import HandwritingDataset, ctc_collate_fn  # noqa: E402
+from handwriting_dataset import HandwritingDataset, ctc_collate_fn  # noqa: E402
 from torchvision import transforms
 
 base_csv = "/home/dev/doctor_ocr_v2/dataset/combined_labels.csv"

@@ -30,7 +30,7 @@ DoctorOcr/
 │   ├── evaluate.py
 │   ├── model/model_v2_2.py
 │   └── report_v2_2.md
-└── doctor_ocr_v3/                # v3 — 데이터 실험 + 평가 레이어 (메인)
+└── doctor_ocr_v3/                # v3 — 데이터 실험 + 평가 레이어 (메인, 자립)
     ├── DESIGN.md                 # 자가개선 시나리오 설계
     ├── DATASETS.md               # 데이터셋 구조/재생성 가이드
     ├── scripts/                  # 데이터 가공 + 학습 스크립트
@@ -41,10 +41,13 @@ DoctorOcr/
     ├── evaluate/                 # 평가 레이어 (CER + 빈도그룹 + 수용기준)
     │   ├── run_eval.py           #   평가 실행
     │   ├── metrics.py / aggregate.py / acceptance.py
+    │   ├── handwriting_dataset.py #  HandwritingDataset/ctc_collate/evaluate_model (v2_2 복제)
     │   └── test_*.py             #   단위 테스트
+    ├── model/                    # model_v2_2.py (v2_2 복제, CRNN 정의)
     ├── plans/                    # 구현 계획 문서
     ├── reports/                  # baseline / 실험 비교 보고서
     ├── logs/                     # 학습 로그 (gitignore)
+    ├── venv/                     # v3 전용 venv (torch 2.13.0+cu132, gitignore)
     ├── data/                     # 실험군 1/2/3 데이터 (gitignore)
     └── working/                  # 체크포인트 (gitignore)
 ```
@@ -116,7 +119,10 @@ DoctorOcr/
   - **doctor_ocr 학습/평가: GPU1 (Max-Q) 타겟팅** — `CUDA_VISIBLE_DEVICES=1` 강제
   - Blackwell sm_120 미지원엔 cu132 PyTorch 빌드 필요 (torch 2.13.0+cu132 사용)
 - **venv**: v1/v2/v2_1 → `/home/dev/doctor_ocr/venv`, `/home/dev/vllm-env`
-  v2_2 → `/home/dev/doctor_ocr_v2_2/venv` (torch 2.13.0+cu132) ★ v3 학습·평가도 이 venv 사용
+  v2_2 → `/home/dev/doctor_ocr_v2_2/venv` (torch 2.13.0+cu132)
+  **v3 → `/home/dev/DoctorOcr/doctor_ocr_v3/venv`** (전용 venv, v2_2 venv의 site-packages 물리 복사 — torch 2.13.0+cu132)
+- **v3 코드 자립**: `model/model_v2_2.py`, `evaluate/handwriting_dataset.py` 는 v2_2 라이브 원본의 복제본 (v2_2 원본은 수정 금지). v3 파이프라인은 v2_2 코드 의존 없이 v3 내부 모듈만 사용.
+  > venv 재생성: `python3 -m venv venv && rsync -a /home/dev/doctor_ocr_v2_2/venv/lib/python3.13/site-packages/ venv/lib/python3.13/site-packages/`
 
 ## 실행 방법
 
@@ -126,15 +132,15 @@ DoctorOcr/
 ### v3 (메인) — 학습
 ```bash
 cd /home/dev/DoctorOcr/doctor_ocr_v3
-# 실험군별 학습 (GPU1 Max-Q, 백그라운드 권장)
-CUDA_VISIBLE_DEVICES=1 /home/dev/doctor_ocr_v2_2/venv/bin/python scripts/train_exp.py --exp 2 > logs/train_exp2.log 2>&1 &
+# 실험군별 학습 (GPU1 Max-Q, 백그라운드 권장) — v3 전용 venv
+CUDA_VISIBLE_DEVICES=1 venv/bin/python scripts/train_exp.py --exp 2 > logs/train_exp2.log 2>&1 &
 # exp: 1(원본) / 2(증강2배) / 3(증강+합성)
 ```
 
 ### v3 — 평가 레이어 (CER + 빈도그룹 + 수용기준)
 ```bash
 cd /home/dev/DoctorOcr/doctor_ocr_v3
-VENV=/home/dev/doctor_ocr_v2_2/venv/bin/python
+VENV=venv/bin/python
 # 공정 비교 (모든 모델 → 같은 원본 val)
 CUDA_VISIBLE_DEVICES=1 $VENV evaluate/run_eval.py \
   --ckpt working/exp2/checkpoints/best_model.pth \

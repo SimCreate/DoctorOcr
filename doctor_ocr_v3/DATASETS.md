@@ -46,13 +46,13 @@ cd /home/dev/DoctorOcr/doctor_ocr_v3
 #   → 최초 1회 수동: cp 원본 → data/experiment_1, mark_exp1.py 실행
 
 # 실험군 2 (실사 증강 2배)
-/home/dev/doctor_ocr_v2_2/venv/bin/python scripts/augment_dataset.py
+venv/bin/python scripts/augment_dataset.py
 
 # 실험군 3 (저빈도 합성, 12.5% 캡)
-/home/dev/doctor_ocr_v2_2/venv/bin/python scripts/synthesize_labels.py
+venv/bin/python scripts/synthesize_labels.py
 
 # 무결성 검증 (전 실험군)
-/home/dev/doctor_ocr_v2_2/venv/bin/python scripts/verify_datasets.py
+venv/bin/python scripts/verify_datasets.py
 ```
 
 ## 재생성 시 주의

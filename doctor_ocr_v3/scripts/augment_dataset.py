@@ -6,7 +6,7 @@
 CSV에 source 컬럼: real(원본) / aug(증강본)
 
 실행:
-  /home/dev/doctor_ocr_v2_2/venv/bin/python augment_dataset.py
+  venv/bin/python augment_dataset.py
 """
 import sys
 from pathlib import Path

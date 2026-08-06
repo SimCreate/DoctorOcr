@@ -68,15 +68,15 @@ reports/exp_comparison_20260805_clean.md      # 본 문서
 cd /home/dev/DoctorOcr/doctor_ocr_v3
 
 # 1. 클린 split + 실험군 데이터 재구성 (train만 증강/합성)
-/home/dev/doctor_ocr_v2_2/venv/bin/python scripts/build_clean_split.py
+venv/bin/python scripts/build_clean_split.py
 
 # 2. 재학습 (GPU1 Max-Q, `--clean` = 리키지 가드 + 고정 val)
-CUDA_VISIBLE_DEVICES=1 /home/dev/doctor_ocr_v2_2/venv/bin/python -u scripts/train_exp.py --exp 1 --clean
-CUDA_VISIBLE_DEVICES=1 /home/dev/doctor_ocr_v2_2/venv/bin/python -u scripts/train_exp.py --exp 2 --clean
-CUDA_VISIBLE_DEVICES=1 /home/dev/doctor_ocr_v2_2/venv/bin/python -u scripts/train_exp.py --exp 3 --clean
+CUDA_VISIBLE_DEVICES=1 venv/bin/python -u scripts/train_exp.py --exp 1 --clean
+CUDA_VISIBLE_DEVICES=1 venv/bin/python -u scripts/train_exp.py --exp 2 --clean
+CUDA_VISIBLE_DEVICES=1 venv/bin/python -u scripts/train_exp.py --exp 3 --clean
 
 # 3. 클린 val 정식 평가 (고정 split, split 없이 전체 평가)
-CUDA_VISIBLE_DEVICES=1 /home/dev/doctor_ocr_v2_2/venv/bin/python evaluate/run_eval.py \
+CUDA_VISIBLE_DEVICES=1 venv/bin/python evaluate/run_eval.py \
   --ckpt working/exp2_clean/checkpoints/best_model.pth \
   --char-dict working/exp2_clean/char_dict.pkl \
   --csv /home/dev/doctor_ocr_v2/dataset/combined_labels.csv \

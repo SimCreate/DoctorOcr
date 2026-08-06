@@ -5,7 +5,7 @@ v2_2의 모델/체크포인트/데이터를 재사용해 val 전체를 평가하
 CER + 빈도그룹 + 수용기준 판정을 출력한다.
 
 실행:
-  /home/dev/doctor_ocr_v2_2/venv/bin/python run_eval.py
+  venv/bin/python run_eval.py
 
 GPU: CUDA_VISIBLE_DEVICES='1' (GPU1 Max-Q, vLLM과 공존)
 인자:
@@ -26,12 +26,15 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 import pandas as pd
 
-# ---- v2_2 모델 및 평가 로직 재사용 ----
-V2_2 = Path("/home/dev/doctor_ocr_v2_2")
-sys.path.insert(0, str(V2_2 / "model"))
-sys.path.insert(0, str(V2_2))
+# ---- v3 자체 모델/데이터셋 (v2_2에서 복제, 자립) ----
+V3 = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(V3 / "model"))
+sys.path.insert(0, str(V3 / "evaluate"))
 from model_v2_2 import CRNN  # noqa: E402
-from evaluate import HandwritingDataset, ctc_collate_fn, evaluate_model  # noqa: E402
+from handwriting_dataset import HandwritingDataset, ctc_collate_fn, evaluate_model  # noqa: E402
+
+# v2_2 라이브 데이터/체크포인트 (baseline 재측정용 기본값)
+V2_2 = Path("/home/dev/doctor_ocr_v2_2")
 
 # ---- v3 지표 모듈 ----
 CUR = Path(__file__).parent

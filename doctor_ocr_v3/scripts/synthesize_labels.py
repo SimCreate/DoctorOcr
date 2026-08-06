@@ -8,7 +8,7 @@
 - 폰트: /usr/share/fonts/truetype/dejavu/
 
 실행:
-  /home/dev/doctor_ocr_v2_2/venv/bin/python synthesize_labels.py
+  venv/bin/python synthesize_labels.py
 """
 from pathlib import Path
 import random

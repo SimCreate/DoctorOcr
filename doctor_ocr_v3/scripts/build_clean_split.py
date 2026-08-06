@@ -16,7 +16,7 @@
   step 3. val.csv는 건드리지 않음 → 구조적으로 클린
 
 실행:
-  /home/dev/doctor_ocr_v2_2/venv/bin/python scripts/build_clean_split.py
+  venv/bin/python scripts/build_clean_split.py
 
 산출:
   data/clean_split/{train.csv,val.csv}
@@ -35,11 +35,11 @@ from torchvision import transforms
 
 V3 = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(V3 / "scripts"))
-sys.path.insert(0, "/home/dev/doctor_ocr_v2_2/model")
-sys.path.insert(0, "/home/dev/doctor_ocr_v2_2")
+sys.path.insert(0, str(V3 / "model"))
+sys.path.insert(0, str(V3 / "evaluate"))
 
 from model_v2_2 import build_char_dict  # noqa: E402
-from evaluate import HandwritingDataset  # noqa: E402
+from handwriting_dataset import HandwritingDataset  # noqa: E402
 from augment_dataset import augment_image, AUG_PER_SAMPLE, IMG_H, IMG_W  # noqa: E402
 from synthesize_labels import synth_image, FONT_PATHS, SYNTH_RATIO  # noqa: E402
 
