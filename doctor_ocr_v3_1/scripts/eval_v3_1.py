@@ -24,9 +24,8 @@ sys.path.insert(0, str(V3_1 / "scripts"))
 
 from model_v2_1 import CRNN, decode_sequence, MAX_LABEL_LENGTH
 
-# ---- v3 지표 모듈 재사용 (동일 기준) ----
-V3 = Path("/home/dev/DoctorOcr/doctor_ocr_v3")
-sys.path.insert(0, str(V3 / "evaluate"))
+# ---- v3_1 자체 지표 모듈 (v3에서 복제, 자립) ----
+sys.path.insert(0, str(V3_1 / "evaluate"))
 from metrics import cer                      # noqa: E402
 from aggregate import group_predictions, summarize  # noqa: E402
 from acceptance import acceptance_report, overall_cer, acceptance  # noqa: E402

@@ -48,3 +48,7 @@ venv/
 doctor-handwriting-recognition-dataset.zip
 doctor_ocr_v3/data/
 doctor_ocr_v3/working/
+legacy/doctor_ocr_v3/data/
+legacy/doctor_ocr_v3/working/
+legacy/doctor_ocr_v2_2/working/
+legacy/doctor_ocr_v2_2/dataset/

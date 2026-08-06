@@ -54,15 +54,16 @@ CTC(v3 exp2 37.9%)를 넘어설 수 있는지가 실험의 질문.
 ## 데이터 구성
 
 ```
-train: doctor_ocr_v3/data/experiment_2_clean/   (13,386 = 원본 4,462 + 증강 8,924)
+train: doctor_ocr_v3_1/data/exp2_clean/          (13,386 = 원본 4,462 + 증강 8,924)
   ├── combined_labels.csv   (filename, label, source)  13,386행
   └── img/img/*.jpg         13,386장 (원본 + P####__aug0/1.jpg)
-val:   doctor_ocr_v3/data/clean_split/val.csv   (1,116장, v2 원본에서 읽음)
+val:   doctor_ocr_v3_1/data/clean_split/val.csv   (1,116장, v2 원본에서 읽음)
   - v2 원본 이미지: /home/dev/doctor_ocr_v2/dataset/img/img/ (5,578장)
   - val에 aug는 0장 포함 (train과 구조적 분리)
 ```
 
-> v3_1의 `data/exp2_clean`, `data/clean_split`은 v3 디렉토리로의 **심볼릭 링크** (데이터 중복 저장 방지)
+> v3_1의 `data/exp2_clean`, `data/clean_split`은 **자체 로컬 복사본** (v3에서 분리, 2026-08-06)
+> v3(CTC)는 legacy/로 이동 — v3_1은 v2 원본 이미지만 참조 (활성)
 
 ## 실행 방법
 

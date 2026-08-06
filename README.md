@@ -25,31 +25,23 @@ DoctorOcr/
 │   ├── local_train_v2_1.py / local_infer_v2_1.py
 │   ├── model/model_v2_1.py
 │   └── report_v2_1.md
-├── doctor_ocr_v2_2/              # v2.2 — CTC 기반 CRNN (v3의 베이스)
-│   ├── local_train_v2_2.py / local_infer_v2_2.py
-│   ├── evaluate.py
-│   ├── model/model_v2_2.py
-│   └── report_v2_2.md
-└── doctor_ocr_v3/                # v3 — 데이터 실험 + 평가 레이어 (메인, 자립)
-    ├── DESIGN.md                 # 자가개선 시나리오 설계
-    ├── DATASETS.md               # 데이터셋 구조/재생성 가이드
-    ├── scripts/                  # 데이터 가공 + 학습 스크립트
-    │   ├── augment_dataset.py    #   실사 증강 (exp2)
-    │   ├── synthesize_labels.py  #   저빈도 합성 (exp3)
-    │   ├── verify_datasets.py    #   데이터셋 무결성 검증
-    │   └── train_exp.py          #   실험군별 학습 (exp 1/2/3)
-    ├── evaluate/                 # 평가 레이어 (CER + 빈도그룹 + 수용기준)
-    │   ├── run_eval.py           #   평가 실행
-    │   ├── metrics.py / aggregate.py / acceptance.py
-    │   ├── handwriting_dataset.py #  HandwritingDataset/ctc_collate/evaluate_model (v2_2 복제)
-    │   └── test_*.py             #   단위 테스트
-    ├── model/                    # model_v2_2.py (v2_2 복제, CRNN 정의)
-    ├── plans/                    # 구현 계획 문서
-    ├── reports/                  # baseline / 실험 비교 보고서
-    ├── logs/                     # 학습 로그 (gitignore)
-    ├── venv/                     # v3 전용 venv (torch 2.13.0+cu132, gitignore)
-    ├── data/                     # 실험군 1/2/3 데이터 (gitignore)
-    └── working/                  # 체크포인트 (gitignore)
+├── doctor_ocr_v3_1/              # v3_1 — ★ 현재 메인 (attention 디코더 + 증강 데이터, 자립)
+│   ├── DESIGN.md                 # 설계/가설/데이터 구성
+│   ├── scripts/
+│   │   ├── train_v3_1.py         #   학습 (v2.1 attention + exp2_clean 13,386장)
+│   │   ├── eval_v3_1.py          #   beam search 평가 (클린 val 1,116장)
+│   │   └── make_presentation.py  #   발표 PPT 생성
+│   ├── evaluate/                 # 자체 평가 레이어 (v3에서 복제)
+│   │   ├── metrics.py / aggregate.py / acceptance.py
+│   │   └── result_*.csv          #   평가 결과 (v3_1 + v3 클린)
+│   ├── utils/result_viewer.py    #   Streamlit 정성 분석 뷰어
+│   ├── model/model_v2_1.py       # v2.1 모델 복제 (자립)
+│   ├── data/                     # exp2_clean + clean_split (로컬 복사본)
+│   ├── reports/                  # 평가 보고서
+│   └── venv/                     # 전용 venv (torch 2.13.0+cu132)
+└── legacy/                       # ★ 보관 (CTC 기반, 평가 완료/종료)
+    ├── doctor_ocr_v2_2/          # v2.2 — CTC 기반 CRNN
+    └── doctor_ocr_v3/            # v3 — CTC 데이터 실험 + 평가 레이어 원본
 ```
 
 > 데이터(`data/`, `working/`, `logs/`)는 `.gitignore` — 저장소에는 소스·문서·보고서만.

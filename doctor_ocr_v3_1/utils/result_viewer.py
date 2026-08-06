@@ -29,13 +29,14 @@ from PIL import Image
 # 경로 설정
 # ============================================================
 REPO = Path(__file__).resolve().parent.parent        # doctor_ocr_v3_1
-V3 = Path("/home/dev/DoctorOcr/doctor_ocr_v3")       # v3 evaluate 결과
+EVAL = REPO / "evaluate"                              # v3_1 자체 평가 결과/지표
 
 # 사용 가능한 결과 CSV: 이름 -> 절대경로
 AVAILABLE = {
-    "v3 exp2_clean (CTC)": V3 / "evaluate" / "result_exp2_clean.csv",
-    "v3 exp1_clean (원본)": V3 / "evaluate" / "result_exp1_clean.csv",
-    "v3 exp3_clean (합성)": V3 / "evaluate" / "result_exp3_clean.csv",
+    "v3_1 (Attention, 최종)": EVAL / "result_v3_1_clean.csv",
+    "v3 exp2_clean (CTC)": EVAL / "result_exp2_clean.csv",
+    "v3 exp1_clean (원본)": EVAL / "result_exp1_clean.csv",
+    "v3 exp3_clean (합성)": EVAL / "result_exp3_clean.csv",
 }
 # 존재하는 것만
 AVAILABLE = {k: v for k, v in AVAILABLE.items() if v.exists()}
