@@ -34,9 +34,8 @@ EVAL = REPO / "evaluate"                              # v3_1 자체 평가 결�
 # 사용 가능한 결과 CSV: 이름 -> 절대경로
 AVAILABLE = {
     "v3_1 (Attention, 최종)": EVAL / "result_v3_1_clean.csv",
-    "v3 exp2_clean (CTC)": EVAL / "result_exp2_clean.csv",
-    "v3 exp1_clean (원본)": EVAL / "result_exp1_clean.csv",
-    "v3 exp3_clean (합성)": EVAL / "result_exp3_clean.csv",
+    "v2_1 (Attention, 원본)": EVAL / "result_v2_1_clean.csv",
+    "v2 (Attention, 원본)": EVAL / "result_v2_clean.csv",
 }
 # 존재하는 것만
 AVAILABLE = {k: v for k, v in AVAILABLE.items() if v.exists()}
