@@ -4,8 +4,8 @@ Doctor Handwriting OCR - Model Definition (v2_2 → v3 복제본)
 CTC 기반 CRNN: BiLSTM 3층 + CTC Head (병렬 연산으로 GPU 100% 활용)
 
 v2_2 라이브 원본: /home/dev/doctor_ocr_v2_2/model/model_v2_2.py
-  - v2_2 원본은 수정 금지 (메모리 규칙)
-  - 본 파일은 v3 자립을 위한 복제본. 원본과 동기화 시 diff 확인 필수
+  - v2_2 원본은 수정 금지 (메모리 규칙). 본 파일은 기능적으로 원본과 동일한 복제본.
+  - v2_2 원본 수정 시 동기화 필요 (diff로 반영).
 """
 
 import torch
@@ -25,7 +25,7 @@ IMAGE_WIDTH = 256
 CTC_BLANK = 0
 
 SPECIAL_TOKENS = {
-    '<PAD>': 1,
+    '<PAD>': 1,   # pad는 1로
     '<SOS>': 2,
     '<EOS>': 3,
     '<UNK>': 4,
@@ -131,30 +131,54 @@ class CTCHead(nn.Module):
         Returns:
             logits: [B, T, vocab_size] - log_softmax 적용 전
         """
+        # Dropout 적용
         x = self.dropout(encoder_out)
+        # Linear projection to vocab (blank 포함)
         logits = self.fc(x)
         return logits  # [B, T, vocab_size]
 
     def get_loss(self, logits, targets, target_lengths):
         """
         CTC Loss 계산
+        Args:
+            logits: [B, T, vocab_size] - raw logits
+            targets: [B, max_target_len] - padded target sequences
+            target_lengths: [B] - 실제 target 길이
         """
         B, T, V = logits.shape
+        
+        # log_softmax 적용 (시간 차원 T에 대해)
         log_probs = F.log_softmax(logits, dim=-1)  # [B, T, V]
+        
+        # CTC는 [T, B, V] 형태 필요
         log_probs = log_probs.permute(1, 0, 2)  # [T, B, V]
+        
+        # input lengths: 모든 샘플이 같은 T
         input_lengths = torch.full((B,), T, dtype=torch.long, device=logits.device)
+        
+        # CTC loss
         loss = F.ctc_loss(
-            log_probs, targets, input_lengths, target_lengths,
-            blank=CTC_BLANK, reduction='mean', zero_infinity=True
+            log_probs, 
+            targets, 
+            input_lengths, 
+            target_lengths,
+            blank=CTC_BLANK,
+            reduction='mean',
+            zero_infinity=True
         )
         return loss
 
     def decode(self, logits):
         """
         Greedy decoding for inference
+        Args:
+            logits: [B, T, vocab_size]
+        Returns:
+            List of decoded strings
         """
         log_probs = F.log_softmax(logits, dim=-1)
         preds = log_probs.argmax(-1)  # [B, T]
+        
         decoded = []
         for b in range(preds.size(0)):
             seq = preds[b].tolist()
@@ -219,12 +243,12 @@ def build_char_dict(labels):
     # CTC: blank token은 0으로 예약
     char2idx = {'<BLANK>': CTC_BLANK}
     idx = len(char2idx)
-
+    
     # 특수 토큰들 (blank 제외)
     for tok, val in SPECIAL_TOKENS.items():
         char2idx[tok] = idx
         idx += 1
-
+    
     # 일반 문자들
     for ch in chars:
         char2idx[ch] = idx
