@@ -89,6 +89,34 @@ DoctorOcr/
 | CRNN | An End-to-End Trainable Neural Network for Image-based Sequence Recognition (Shi et al., 2015) | https://arxiv.org/abs/1507.05717 |
 | SE Block | Squeeze-and-Excitation Networks (Hu et al., 2017) | https://arxiv.org/abs/1709.01507 |
 
+## 평가 지표
+
+v3부터 도입된 평가 레이어(`evaluate/`)가 사용하는 지표. 의료 처방전 OCR은 단어 단위 평가가 실제 활용에 맞다 — 이미지가 아니라 **출력된 단어 전체가 정확한가**를 본다.
+
+| 지표 | 정의 | 용도 |
+|---|---|---|
+| **exact match** | 예측 단어 == 정답 단어 (전체 일치) | 기본 정확도. 단어 하나라도 틀리면 오답 |
+| **CER** (Character Error Rate) | (Levenshtein 편집거리) ÷ 정답 글자 수 | "얼마나 가까웠는가" — `Napa`→`Npa`는 1/4=0.25, 완전 오답은 1.0 |
+| **WER** (Word Error Rate) | 단어 단위 편집거리 ÷ 정답 단어 수 | 문장/여러 단어 처리 시 유용 (현 단어 데이터에선 보조) |
+| **빈도그룹** (고/중/저) | 라벨 전체 빈도 기준: 고≥10회, 중 2~9회, 저 1회 | 롱테일 분석 — 고빈도만 잘 되고 저빈도가 무너지는지 확인 |
+| **수용기준** (PASS/FAIL) | 고빈도 exact ≥90% AND 전체 CER ≤20% | 실사용 가능 여부의 게이트. **현재 전 실험 FAIL** |
+
+**평가 방식의 계보** (코드 구조):
+- v1/v2/v2.1: `local_infer*.py` 안에 인라인 — "pred == true" 정확도만 계산 (모듈 없음)
+- v2.2: `evaluate.py` 단일 파일 — 정확도 + Loss
+- v3: `evaluate/` 폴더 모듈화 — exact/CER/WER/빈도그룹/수용기준 (metrics+aggregate+acceptance)
+- **v3_1: v3 모듈 + 고유 확장** — 위 전부 + **beam oracle** + **반복토큰(repetition)** 분석
+
+**v3_1 고유 확장 지표** (attention beam search 특성 분석):
+
+| 지표 | 정의 | 현재 결과 |
+|---|---|---|
+| **beam oracle** | top-k 후보(beam)에 정답 포함 여부 | 42.6% (top-1 30.4%보다 +12.2p) |
+| **반복토큰** | 연속 동일문자 ≥3 (예: `Raviiil`) | 1.8% (20/1116) |
+
+- beam oracle은 "top-1은 틀렸지만 후보엔 정답이 있는" 케이스(12.2%)를 드러내어, 실패가 디코딩(순위) 문제인지 인코더가 못 읽은 문제인지 구분하게 한다. 현재 중·저빈도는 후보에도 없어 **인코더 문제**로 판정.
+- 반복토큰은 attention 디코더의 전형적 mode collapse(`Deliiiii`식)를 탐지 — v3_1에선 1.8%로 낮은 수준.
+
 ## 데이터셋
 
 - **소스**: Kaggle RxHandBD — 의사 처방전 손글씨 5,578장 (Train 5,000 + Test 400)
