@@ -4,10 +4,7 @@
 Kaggle RxHandBD 데이터셋(5,578장) 기반, v1 → v3_1 순차 실험 (모노레포)
 
 - 현재 메인: **doctor_ocr_v3_1** (attention 디코더 + 증강 데이터, 자립 패키지)
-- v2.2 / v3 (CTC 계열)은 평가 완료 → **`legacy/` 로 보관**
-- **현재 상태**: 클린 스플릿 기준 전 실험 **FAIL** — 수용기준(고빈도 ≥90%, CER ≤20%) 미충족
-  - v3(CTC): exp2_clean 37.9% · v3_1(Attention): 30.4% — CTC가 실질 우위
-  - 8/4 "98.8% PASS"는 리키지 착시로 폐기 → `legacy/doctor_ocr_v3/reports/exp_comparison_20260805_clean.md`
+- **현재 상태**: 클린 스플릿 기준 **FAIL** — 수용기준(고빈도 ≥90%, CER ≤20%) 미충족 (exact 30.4%, CER 38.2%)
 
 ## 프로젝트 구조
 
@@ -33,21 +30,21 @@ DoctorOcr/
 │   │   ├── train_v3_1.py         #   학습 (v2.1 attention + exp2_clean 13,386장)
 │   │   ├── eval_v3_1.py          #   beam search 평가 (클린 val 1,116장)
 │   │   └── make_presentation.py  #   발표 PPT 생성
-│   ├── evaluate/                 # 자체 평가 레이어 (v3에서 복제)
+│   ├── evaluate/                 # 자체 평가 레이어
 │   │   ├── metrics.py / aggregate.py / acceptance.py
-│   │   └── result_*.csv          #   평가 결과 (v3_1 + v3 클린)
+│   │   └── result_*.csv          #   평가 결과
 │   ├── utils/result_viewer.py    #   Streamlit 정성 분석 뷰어
 │   ├── model/model_v2_1.py       # v2.1 모델 복제 (자립)
 │   ├── data/                     # exp2_clean + clean_split (로컬 복사본)
 │   ├── reports/                  # 평가 보고서
 │   └── venv/                     # 전용 venv (torch 2.13.0+cu132)
-└── legacy/                       # ★ 보관 (CTC 기반, 평가 완료/종료)
+└── legacy/                       # ★ 보관 (CTC 계열, 평가 완료)
     ├── doctor_ocr_v2_2/          # v2.2 — CTC 기반 CRNN
     └── doctor_ocr_v3/            # v3 — CTC 데이터 실험 + 평가 레이어 원본
 ```
 
 > 데이터(`data/`, `working/`, `logs/`)는 `.gitignore` — 저장소에는 소스·문서·보고서만.
-> 원본(v2 dataset)은 절대 수정하지 않고, v3 실험군 데이터는 복사/증강/합성물만 사용.
+> 원본(v2 dataset)은 절대 수정하지 않고, 실험군 데이터는 복사/증강/합성물만 사용.
 
 ## 결과 요약
 
@@ -56,15 +53,13 @@ DoctorOcr/
 | 방식 | exact | CER | 고빈도 | 중빈도 | 저빈도 | 판정 |
 |---|---|---|---|---|---|---|
 | v3_1 (Attention, beam=5) | 30.4% | 38.2% | 54.8% | 3.2% | 0.4% | FAIL |
-| v3 exp2_clean (CTC, 비교) | **37.9%** | **20.6%** | 56.5% | 33.5% | 8.0% | FAIL |
 
-- attention은 학습(loss 수렴)은 개선됐으나 추론에서 CTC 미달 — 고빈도만 작동, 중·저빈도 붕괴 (중 3.2% / 저 0.4%).
-- "데이터가 attention을 살린다"는 부분 검증, "attention > CTC"는 **기각**.
+- 고빈도 단어는 그럭저럭 인식하나(54.8%), 중·저빈도 붕괴 (중 3.2% / 저 0.4%)로 CER이 높음.
 - 학습 로그 acc(43.1%) ≠ 실제 디코딩(30.4%) — 평가는 항상 디코더 재측정으로 판단.
-- 공통: 수용기준(고빈도 ≥90%, CER ≤20%) 미충족. 통과하려면 **라벨 오류 정제**나 아키텍처 개선 우선.
+- 수용기준(고빈도 ≥90%, CER ≤20%) 미충족. 통과하려면 **라벨 오류 정제**나 아키텍처 개선 우선.
 - 상세: `doctor_ocr_v3_1/reports/eval_v3_1_20260806.md`
 
-**버전 계보 (활성: v1 → v2 → v2.1 → v3_1; v2.2/v3은 legacy 보관)**
+**버전 계보 (활성: v1 → v2 → v2.1 → v3_1)**
 
 | 항목 | v1 | v2 | v2.1 | v3_1 |
 |---|---|---|---|---|
@@ -73,7 +68,7 @@ DoctorOcr/
 | 추론 정확도 (클린) | 0% | 20% | 20% | 30.4% (beam=5) |
 | 상태 | 활성 | 활성 | 활성 | **★ 메인** |
 
-> v2.2 (CTC) / v3 (CTC 실험): 평가 완료, `legacy/` 보관 — 하단 [Legacy 기록](#legacy-기록) 참조
+> v2.2 / v3 (CTC 계열)는 평가 완료, `legacy/` 보관 — [Legacy 기록](#legacy-기록) 참조
 
 ## 아키텍처 진화
 
@@ -84,14 +79,13 @@ DoctorOcr/
 | v1 | 7 Conv Block | 2층, hidden 256, dropout 0.2 | Attention (4-head, LSTM 1층), TF 0.5 | 기준선 |
 | v2 | 7 Conv Block | 2층, hidden 256 | Attention (4-head), TF 0.5 | BATCH 96 + AMP |
 | v2.1 | SEBlock 5블록 | 3층, hidden 384, dropout 0.3 | Attention (8-head, LSTM 2층) + Beam Search | SEBlock + 층수 증가 + 8-head |
-| v3_1 | v2.1 동일 (SEBlock) | v2.1 동일 (3층, hidden 384) | **Attention 8-head + Beam Search (22.7M)** | 증강 데이터로 attention 재검증 → CTC 미달로 기각 |
+| v3_1 | v2.1 동일 (SEBlock) | v2.1 동일 (3층, hidden 384) | **Attention 8-head + Beam Search (22.7M)** | 증강 데이터로 attention 재검증 |
 
 ## 참고 논문
 
 | 기술 | 논문 | 링크 |
 |---|---|---|
 | CRNN | An End-to-End Trainable Neural Network for Image-based Sequence Recognition (Shi et al., 2015) | https://arxiv.org/abs/1507.05717 |
-| CTC | Connectionist Temporal Classification (Graves, 2006) | https://www.cs.toronto.edu/~graves/icml_2006.pdf |
 | SE Block | Squeeze-and-Excitation Networks (Hu et al., 2017) | https://arxiv.org/abs/1709.01507 |
 
 ## 데이터셋
@@ -103,27 +97,14 @@ DoctorOcr/
 - **v3_1 학습 데이터**: `doctor_ocr_v3_1/data/exp2_clean/` — 원본 4,462 + 실사 증강 2배 (13,386장)
 - 원본 데이터/라벨 CSV는 `.gitignore` 제외 (용량 문제)
 
-## 하드웨어 / 환경
-
-- **GPU**: 2× RTX PRO 6000 Blackwell (192GB VRAM, GPU0 Workstation 450W + GPU1 Max-Q 300W)
-- **GPU 할당 (현재)**:
-  - vLLM (DeepSeek V4 Flash, TP2): GPU0 + GPU1 공존
-  - **doctor_ocr 학습/평가: GPU1 (Max-Q) 타겟팅** — `CUDA_VISIBLE_DEVICES=1` 강제
-  - Blackwell sm_120 미지원엔 cu132 PyTorch 빌드 필요 (torch 2.13.0+cu132 사용)
-- **venv**: v1/v2/v2_1 → `/home/dev/doctor_ocr/venv`
-  **v3_1 → `/home/dev/DoctorOcr/doctor_ocr_v3_1/venv`** (전용, torch 2.13.0+cu132)
-  > v3_1 venv는 v2_2 venv(`/home/dev/doctor_ocr_v2_2/venv`) site-packages 물리 복사로 생성
-  > 재생성: `python3 -m venv venv && rsync -a /home/dev/doctor_ocr_v2_2/venv/lib/python3.13/site-packages/ venv/lib/python3.13/site-packages/`
-- **v3_1 코드 자립**: `model/model_v2_1.py`, `evaluate/{metrics,aggregate,acceptance}.py`는 원본(v2.1/v3)의 복제본. v3_1 파이프라인은 v3_1 내부 모듈만 사용 — legacy와 독립.
-
 ## 실행 방법
 
-> 스크립트 내 경로는 라이브 디렉토리(`/home/dev/DoctorOcr/`) 기준. GPU1(Max-Q) 타겟팅.
+> 스크립트 내 경로는 라이브 디렉토리(`/home/dev/DoctorOcr/`) 기준.
 
 ### v3_1 (메인) — 학습
 ```bash
 cd /home/dev/DoctorOcr/doctor_ocr_v3_1
-# attention 디코더 (v2.1) + exp2_clean(증강 13,386장), GPU1 백그라운드 권장
+# attention 디코더 (v2.1) + exp2_clean(증강 13,386장), 백그라운드 권장
 CUDA_VISIBLE_DEVICES=1 venv/bin/python scripts/train_v3_1.py > logs/train_v3_1.log 2>&1 &
 ```
 
@@ -146,13 +127,10 @@ venv/bin/python -m streamlit run utils/result_viewer.py
 
 ## 알려진 이슈 / 교훈
 
-- **v2.1 체크포인트 config 버그**: 학습 시 `hidden_size=384`인데 config엔 `256` 저장 — 추론 시 강제 우회
-- **Attention 반복 토큰**: teacher forcing 0.5에도 `Deliiiii` 같은 반복 생성 → CTC로 해결 (v2.2 전환 이유)
-- **DataParallel 비효율**: 소규모 모델(12M)에선 단일 GPU + 대용량 배치가 3.3× 빠름
-- **GPU 공존**: vLLM(93GB×2)과 학습 동시 진행 시 GPU1 free ~3.6GB. v3/v3_1 학습 VRAM ~1.6GB로 공존 가능
-- **저빈도 합성 한계**: 폰트 합성(exp3)은 저빈도 개선에 미미 — 실데이터 증강 추가가 더 유효
+- **v2.1 체크포인트 config 버그**: 학습 시 `hidden_size=384`인데 config엔 `256` 저장 — 추론 시 강제 우회 (v3_1에선 수정됨)
+- **DataParallel 비효율**: 소규모 모델에선 단일 GPU + 대용량 배치가 더 빠름
 - **학습 로그 acc는 추론 성능이 아님** (v3_1): argmax 로그 acc 43.1%였으나 beam search 실제 디코딩 30.4% — teacher forcing·자기생성 혼재. 최종 판단은 반드시 디코더 재평가
-- **attention vs CTC 오류 특성** (v3_1): attention은 고빈도만 작동(54.8%)·중저빈도 붕괴(중3.2/저0.4) → CER 급증. CTC는 중저 빈도도 부분 일치 → CER 우위. "어떤 오류가 더 치명적인가" 고려 필요
+- **저빈도 붕괴** (v3_1): attention은 고빈도만 작동(54.8%)·중저빈도 급락(중3.2/저0.4) → CER 상승. 중심 단어 생성 강화 필요
 
 ## Legacy 기록
 
