@@ -38,9 +38,9 @@ DoctorOcr/
 │   ├── data/                     # exp2_clean + clean_split (로컬 복사본)
 │   ├── reports/                  # 평가 보고서
 │   └── venv/                     # 전용 venv (torch 2.13.0+cu132)
-└── legacy/                       # ★ 보관 (CTC 계열, 평가 완료)
-    ├── doctor_ocr_v2_2/          # v2.2 — CTC 기반 CRNN
-    └── doctor_ocr_v3/            # v3 — CTC 데이터 실험 + 평가 레이어 원본
+└── legacy/                       # ★ 보관 — 상세는 하단 [Legacy 기록]
+    ├── doctor_ocr_v2_2/
+    └── doctor_ocr_v3/
 ```
 
 > 데이터(`data/`, `working/`, `logs/`)는 `.gitignore` — 저장소에는 소스·문서·보고서만.
@@ -69,8 +69,6 @@ DoctorOcr/
 | 추론 정확도 (클린) | 0% | 20% | 20% | 30.4% (beam=5) |
 | 상태 | 활성 | 활성 | 활성 | **★ 메인** |
 
-> v2.2 / v3 (CTC 계열)는 평가 완료, `legacy/` 보관 — [Legacy 기록](#legacy-기록) 참조
-
 ## 아키텍처 진화
 
 활성 버전들(v1 → v2 → v2.1 → v3_1)은 CRNN 3컴포넌트(CNN Encoder + BiLSTM + Decoder) 골격을 유지하되, 디코더와 학습 전략이 단계적으로 개선:
@@ -91,7 +89,7 @@ DoctorOcr/
 
 ## 평가 지표
 
-v3부터 도입된 평가 레이어(`evaluate/`)가 사용하는 지표. 의료 처방전 OCR은 단어 단위 평가가 실제 활용에 맞다 — 이미지가 아니라 **출력된 단어 전체가 정확한가**를 본다.
+v3_1의 평가 레이어(`evaluate/`)가 사용하는 지표. 의료 처방전 OCR은 단어 단위 평가가 실제 활용에 맞다 — 이미지가 아니라 **출력된 단어 전체가 정확한가**를 본다.
 
 | 지표 | 정의 | 용도 |
 |---|---|---|
@@ -103,9 +101,7 @@ v3부터 도입된 평가 레이어(`evaluate/`)가 사용하는 지표. 의료 
 
 **평가 방식의 계보** (코드 구조):
 - v1/v2/v2.1: `local_infer*.py` 안에 인라인 — "pred == true" 정확도만 계산 (모듈 없음)
-- v2.2: `evaluate.py` 단일 파일 — 정확도 + Loss
-- v3: `evaluate/` 폴더 모듈화 — exact/CER/WER/빈도그룹/수용기준 (metrics+aggregate+acceptance)
-- **v3_1: v3 모듈 + 고유 확장** — 위 전부 + **beam oracle** + **반복토큰(repetition)** 분석
+- **v3_1: `evaluate/` 폴더 모듈화** — exact/CER/WER/빈도그룹/수용기준 + **beam oracle** + **반복토큰(repetition)**
 
 **v3_1 고유 확장 지표** (attention beam search 특성 분석):
 
@@ -115,7 +111,7 @@ v3부터 도입된 평가 레이어(`evaluate/`)가 사용하는 지표. 의료 
 | **반복토큰** | 연속 동일문자 ≥3 (예: `Raviiil`) | 1.8% (20/1116) |
 
 - beam oracle은 "top-1은 틀렸지만 후보엔 정답이 있는" 케이스(12.2%)를 드러내어, 실패가 디코딩(순위) 문제인지 인코더가 못 읽은 문제인지 구분하게 한다. 현재 중·저빈도는 후보에도 없어 **인코더 문제**로 판정.
-- 반복토큰은 attention 디코더의 전형적 mode collapse(`Deliiiii`식)를 탐지 — v3_1에선 1.8%로 낮은 수준.
+- 반복토큰은 attention 디코더의 전형적 mode collapse(`Raviiil`식)를 탐지 — v3_1에선 1.8%로 낮은 수준.
 
 ## 데이터셋
 
