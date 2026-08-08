@@ -84,25 +84,59 @@ def main():
                 pred_str = decode_sequence(dec[j], ctc_i2c)
                 rows.append({'true': gt, 'pred': pred_str, 'label': gt,
                              'match': gt == pred_str, 'pred_decoder': 'ctc',
-                             'candidates': pred_str})
+                             'candidates': pred_str,
+                             'filename': str(r['filename'])})
 
     df = pd.DataFrame(rows)
     df['cer'] = df.apply(lambda r: cer(r['true'], r['pred']), axis=1)
 
-    # ---- attention beam (옵션, 느림) ----
-    if args.attn:
-        print("[ATTN] attention beam 평가 중...")
-        attn_rows = []
-        with torch.no_grad():
-            for _, r in df.iterrows():
-                img = load_resize_pad(Path(args.img_dir) / r['label_path'] if 'label_path' in r else Path(args.img_dir) / df.iloc[_].name, 128, 256) if False else None
-        # (간단 구현 생략 — CTC가 주 평가)
-
-    # ---- 집계 (v3 공통) ----
+    # ---- 집계용 label_counts (attention 블록에서도 사용하므로 먼저 계산) ----
     train_csv = str(V3_3 / "data/exp2_clean/combined_labels.csv")
     full_df = pd.read_csv(train_csv)
     label_counts = full_df['label'].value_counts().to_dict()
 
+    # ---- attention beam (옵션, 느림) ----
+    if args.attn:
+        print(f"[ATTN] attention beam({args.beam}) 평가 중... (val {len(df)}장)")
+        attn_rows = []
+        with torch.no_grad():
+            for idx, r in df.iterrows():
+                img = load_resize_pad(Path(args.img_dir) / r['filename'], 128, 256)
+                img = torch.from_numpy(preprocess_tensor(img)).float().unsqueeze(0).to(device)
+                pred_candidates = model.predict(img, beam_width=args.beam)  # [[tok,...], ...]
+                pred_tokens = pred_candidates[0] if pred_candidates else []
+                pred_str = decode_sequence(pred_tokens, attn_i2c)
+                gt = str(r['true'])
+                attn_rows.append({'true': gt, 'pred': pred_str, 'label': gt,
+                                  'match': gt == pred_str, 'pred_decoder': 'attn',
+                                  'candidates': pred_str,
+                                  'cer': cer(gt, pred_str)})
+        attn_df = pd.DataFrame(attn_rows)
+        # attention 전용 빈도그룹 집계
+        attn_pred = attn_df.to_dict('records')
+        for p in attn_pred:
+            p['group'] = 'low'
+            c = label_counts.get(p['label'])
+            if c is not None:
+                if c >= 10: p['group'] = 'high'
+                elif c >= 2: p['group'] = 'mid'
+        acc_a = group_predictions(attn_pred, label_counts)
+        summ_a = summarize(acc_a)
+        print("\n=== [RESULT v3_3 (hybrid, ATTENTION beam = %d)] ===" % args.beam)
+        for g in ('high', 'mid', 'low'):
+            s = summ_a[g]
+            a = f"{s['acc']:.1%}" if s['acc'] is not None else 'N/A'
+            c = f"{s['avg_cer']:.1%}" if s['avg_cer'] is not None else 'N/A'
+            print(f"  {g:5s} total={s['total']:4d}  exact_acc={a:>7s}  avg_cer={c}")
+        n_rep_a = sum(1 for p in attn_pred if p.get('repetition', False))
+        print(f"\n=== [REPETITION] {n_rep_a}/{len(attn_pred)} = {n_rep_a/len(attn_pred):.1%}")
+        print(f"=== [전체] attention exact={attn_df['match'].mean()*100:.1f}%  CER={attn_df['cer'].mean()*100:.2f}% ===")
+        attn_df['group'] = [p['group'] for p in attn_pred]
+        attn_out = str(Path(args.out).with_name(Path(args.out).stem + '_attn.csv'))
+        attn_df.to_csv(attn_out, index=False, encoding='utf-8')
+        print(f"[SAVED] {attn_out}")
+
+    # ---- 집계 (v3 공통) ----
     predictions = df.to_dict('records')
     for p in predictions:
         p['group'] = 'low'
