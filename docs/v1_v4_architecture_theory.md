@@ -77,6 +77,10 @@ X ──▶ CNN(시각적 특징) ──▶ BiLSTM(좌우 문맥) ──▶ Atte
 
 **ResNet18 (He et al. 2015)**: 핵심은 잔차 학습 y = F(x) + x. 네트워크가 H(x)를 직접 학습하는 대신 잔차 F(x) = H(x) − x를 학습해 깊은 네트워크의 최적화를 안정화한다. v3에서 256x64 무조건 리사이즈(4:1 왜곡)를 256x128 비율유지 패딩으로 바꾸고, SEBlock CNN을 ImageNet pretrained resnet18로 교체했다 — 사전학습 backbone이 저수준 특징(획/에지) 전이에 효과적이라는 교차검증(2026-08-07) 합의에 따른 것. 한계: (a) stride convolution(보폭 합성곱) 다운샘플링에 의한 해상도 손실 — `ll` 같은 작은 차이를 지울 수 있음 (b) 일반 분류용 backbone이라 width 방향 해상도를 과도하게 줄이는 것을 피해야 함 (c) ImageNet(자연 이미지)과 흑백/필기체의 도메인 미스매치 — fine-tuning 필요.
 
+**CNN 합성곱 동작**: 커널(파란 상자)이 입력 특징맵 위를 한 칸씩 이동하며, 각 위치의 국소 영역과 커널의 원소별 곱을 합산해 출력 특징맵의 한 칸씩 채우는 과정. (출처: Dumoulin/Visin `conv_arithmetic`, MIT)
+
+![CNN 합성곱 동작 (커널 슬라이딩)](assets/cnn_convolution.gif)
+
 ### 3.2 BiLSTM — 시퀀스 인코더
 
 CNN 특징맵을 width 방향으로 펼치면 x₁,…,x_T 시퀀스가 된다. 일본어/영어 필기체에서 현재 글자를 읽을 때 앞뒤 문맥이 모두 필요하다 — 어떤 획이 a/o/e 중 무엇인지 local image만으로 애매할 수 있기 때문이다.
@@ -85,6 +89,10 @@ CNN 특징맵을 width 방향으로 펼치면 x₁,…,x_T 시퀀스가 된다. 
 - **BiLSTM**: 순방향 LSTM과 역방향 LSTM을 동시에 계산하고 은닉 상태를 결합([h→; h←])해 왼쪽+오른쪽 문맥을 모두 사용한다. 필기체에서 현재 문자가 애매할 때 오른쪽 글자를 함께 보면 판단이 쉬워진다.
 
 단점은 순차 계산이라 Transformer처럼 병렬화가 어렵다는 것. 이것이 이후 SVTR이 sequence model 자체를 제거하고 visual token mixing만으로 인식하는 방향으로 발전한 배경과 연결된다.
+
+**LSTM 셀 구조**: 입력 x와 이전 은닉 상태가 forget/input/output 게이트를 거쳐 cell state를 갱신하는 구조. (출처: Leouscin, CC0)
+
+![LSTM 셀 구조](assets/lstm_cell.svg)
 
 ### 3.3 Seq2Seq + Attention 디코더
 
@@ -95,6 +103,10 @@ CTC가 "이미지 feature를 문자로 정렬"에 가깝다면, Seq2Seq는 "지�
 - **Luong Attention (2015)**: dot-product 기반의 단순화된 attention (global/local).
 - **Multi-Head Attention (Vaswani et al. 2017)**: Q=XWq, K=XWk, V=XWv로 투영 후 Attention(Q,K,V)=softmax(QKᵀ/√dₖ)V. 여러 head가 서로 다른 project space에서 local stroke 관계, 문자 간 관계, 장거리 dependency를 동시에 볼 수 있다. 우리 프로젝트는 v1(4-head) → v2 이상(8-head)로 확장했다.
 - **LAS (Chan et al. 2015, Listen Attend and Spell)**: Listener=인코더, Attend=어텐션, Speller=디코더 구조로 음성을 문자 시퀀스로 직접 변환. attention 기반 디코더가 출력 history를 사용해 문자 간 의존성을 명시적으로 모델링한다는 점이 핵심. 우리 CNN→BiLSTM→Attention 구조는 LAS 철학을 이미지 시퀀스 인식으로 옮긴 것.
+
+**Attention 정렬 동작**: 디코더가 다음 문자를 생성할 때, 인코더 출력(입력 시퀀스)의 여러 위치에 attention weight를 계산해 "지금 어느 위치를 봐야 하는지"를 강조한다. OCR에서는 "이미지의 어느 가로 위치를 현재 문자에 대응시키는가"로 해석. (출처: Numiri, CC BY-SA 4.0)
+
+![Attention 정렬 애니메이션](assets/attention.gif)
 
 ### 3.4 CTC — Connectionist Temporal Classification (Graves et al. 2006)
 
@@ -137,6 +149,10 @@ CPU상 CTC는 "어디에 어떤 문자가 있는가"에 대한 정렬 regularize
 ### 3.7 Beam Search
 
 Attention 디코더는 매 timestep P(y_t | y_<t, X)를 계산한다. Greedy는 가장 확률 높은 한 글자만 고르는데, 이는 전체 시퀀스 확률을 최적화하지 못한다. Beam search는 매 timestep마다 상위 B개(beam width) 가설만 유지하며 전체 조합(|V|^T은 불가능)을 근사 탐색한다. 점수는 보통 score(Y)=Σ_t log P(y_t | y_<t, X). 우리 v2부터 beam_width=5 채택. Hori et al. 2017은 hybrid에서 CTC score와 attention score를 디코딩 단계에서 결합하는 joint decoding을 제안했다 (우리는 현재 beam5 attention 단독 — CTC 결합 디코딩은 미도입).
+
+**Beam Search 동작**: 루트(빈 원)에서 출발해, 매 시점 상위 B개(여기선 3) 후보만 남기고 나머지를 잘라낸다. 아래 예시에서 빨간 노드가 살아남은 3개 경로, 회색 노드가 가지치기된 후보. (출처: BogdanShevchenko, CC BY-SA 4.0)
+
+![Beam Search 가지치기 동작](assets/beam_search.gif)
 
 ### 3.8 차세대 방향 — TrOCR / SVTR (비교축)
 
