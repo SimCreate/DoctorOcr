@@ -63,24 +63,35 @@ DoctorOcr/
 
 | 디코더 | exact | CER | 고빈도 | 중빈도 | 저빈도 |
 |---|---|---|---|---|---|
-| **Attention beam5** | **62.3%** | **22.9%** | 83.9% | 55.1% | 0.9% |
+| Attention beam5 | 62.3% | 22.9% | 83.9% | 55.1% | 0.9% |
 | CTC greedy | 48.2% | 24.3% | 70.3% | 23.6% | 2.8% |
 
-- **Attention beam5 정식 eval로 62.3%** 확정 (기존 "67.0%는 로그값" → 이제 beam5로 재측정. 학습 로그의 67.0%는 더 넓은 beam(200)이라 차이).
+- Attention beam5 정식 eval로 62.3% 확정 (기존 "67.0%는 로그값" → 이제 beam5로 재측정. 학습 로그의 67.0%는 더 넓은 beam(200)이라 차이).
 - 라벨 정제(소문자 통일·하이픈→공백)로 CTC greedy 45.5% → 48.2% (+2.7p). CER 25.8% → 24.3%.
-- **attention이 CTC보다 전반 우세**: 전체 62.3 vs 48.2, 중빈도 55.1 vs 23.6. 고빈도 83.9%까지.
+- attention이 CTC보다 전반 우세: 전체 62.3 vs 48.2, 중빈도 55.1 vs 23.6. 고빈도 83.9%까지.
 - 저빈도는 두 디코더 모두 붕괴 (0.9~2.8%) — 디코더가 아니라 데이터/라벨 문제로 확정.
 - ⚠️ 라벨 정제로 빈도그룹 경계가 이동해, 이전 버전과 그룹별 수치는 직접 비교 불가 (전체 exact만 동일 val 기준 비교).
 - 상세: `v4/DESIGN.md`
 
 버전 계보 (v1 → v4 스토리라인)
 
-| 단계 | 아키텍처 | 데이터 (train) | exact | 주요 개선 |
+인코더 구성
+
+| 단계 | CNN 인코더 | 시퀀스 인코더(BiLSTM) | 데이터 (train) |
+|---|---|---|---|
+| v1 | 7 Conv Block (→512ch) | 2층, hidden 256 | 89장 |
+| v2 | SEBlock 5블록 (→512ch) | 3층, hidden 384 | 5,578장 |
+| v3 | v3_1: SEBlock → v3_2: resnet18 | 3층, hidden 384 | 13,386장 |
+| v4 | resnet18 (ImageNet pretrained, layer3) | 3층, hidden 384 | 13,386장 (라벨 정제) |
+
+디코더 구성
+
+| 단계 | 디코더 | loss | exact | 주요 개선 |
 |---|---|---|---|---|
-| v1 | 7CNN+BiLSTM2+Attn | 89장 | 0% | 시작점. 데이터·평가 부실 |
-| v2 | BiLSTM3+Attn8+Beam | 5,578장 | ~20% | 데이터 확장 + 아키텍처 개선 |
-| v3 (v3_1/v3_2) | SEBlock→resnet18 | 13,386장 | 30~35% | 클린 split·증강, 백본 전환 |
-| v4 | resnet18+Attn+CTC | 13,386장 (라벨 정제) | 48.2% | CTC+Attention 하이브리드 |
+| v1 | AttentionDecoder 4-head (LSTM1) | CE | 0% | 시작점. 데이터·평가 부실 |
+| v2 | AttentionDecoder 8-head (LSTM2) + Beam | CE | ~20% | 데이터 확장 + 아키텍처 개선 |
+| v3 | AttentionDecoder 8-head + Beam | CE | 30~35% | 클린 split·증강, 백본 전환 |
+| v4 | AttentionDecoder 8-head + CTCHead (하이브리드) | λ·L_ctc + (1-λ)·β·L_ce | 48.2% (attn 62.3%) | CTC+Attention 하이브리드 |
 
 ## 아키텍처
 
