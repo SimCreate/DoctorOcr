@@ -2,19 +2,22 @@
 """
 DoctorOcr — OCR 결과 정성 분석 뷰어 (Streamlit)
 ================================================
-result CSV (true/pred/match/label/path/group/cer) 를 읽어
+result CSV (true/pred/match/label/filename/group/cer) 를 읽어
 성공 / 부분실패 / 실패 3-카테고리로 이미지 갤러리 검수를 지원한다.
 
 실행:
-    doctor_ocr_v3_1/venv/bin/python -m streamlit run utils/result_viewer.py
+    v4/venv/bin/python -m streamlit run utils/result_viewer.py
+    (또는) streamlit run v4/utils/result_viewer.py
 
 분류 기준 (cer 컬럼):
     성공       cer == 0
     부분실패   0 < cer <= 0.3   (일부 문자 인식, 예: 'Devixil'→'Denixil')
     실패      cer > 0.3        (완전 오인식)
 
+이미지 소스: 원본 Kaggle 이미지 (/home/dev/doctor_ocr_v2/dataset/img/img) + 결과 CSV의 filename
+
 사용법:
-    좌측 사이드바에서 실험군 + 확대 설정
+    좌측 사이드바에서 실험군(디코더별) + 확대 설정
     상단 탭: 성공 / 부분실패 / 실패 (+ 개수)
     '불일치 하이라이트' ON: GT-Pred 다른 문자를 색으로 표시
 """
@@ -29,13 +32,18 @@ from PIL import Image
 # 경로 설정
 # ============================================================
 REPO = Path(__file__).resolve().parent.parent        # v4
-EVAL = REPO / "evaluate"                              # v3_1 자체 평가 결과/지표
+EVAL = REPO / "evaluate"
+
+# 원본 이미지 루트 (Kaggle RxHandBD 정리본)
+IMG_ROOT = Path("/home/dev/doctor_ocr_v2/dataset/img/img")
 
 # 사용 가능한 결과 CSV: 이름 -> 절대경로
 AVAILABLE = {
+    "v4 CTC greedy (최신)": EVAL / "result_v3_3e_clean.csv",
+    "v4 Attention beam5 (최신)": EVAL / "result_v3_3e_clean_attn.csv",
+    "v4 v3_3d (Attention으로 보강)": EVAL / "result_v3_3d_clean.csv",
+    "v3_2 (Attention, 최신)": EVAL / "result_v3_2_clean.csv",
     "v3_1 (Attention, 최종)": EVAL / "result_v3_1_clean.csv",
-    "v2_1 (Attention, 원본)": EVAL / "result_v2_1_clean.csv",
-    "v2 (Attention, 원본)": EVAL / "result_v2_clean.csv",
 }
 # 존재하는 것만
 AVAILABLE = {k: v for k, v in AVAILABLE.items() if v.exists()}
@@ -141,12 +149,17 @@ for tab, cat in zip(tabs, cats):
             cols = st.columns(3)
             for col, r in zip(cols, page_rows[i:i + 3]):
                 with col:
-                    img_path = Path(r["path"])
+                    # 이미지 경로: 결과 CSV의 filename 기반 (원본 IMG_ROOT와 조합)
+                    fname = r.get("filename", r.get("path", ""))
+                    if fname and not Path(fname).exists():
+                        img_path = IMG_ROOT / Path(fname).name
+                    else:
+                        img_path = Path(fname)
                     if img_path.exists():
                         img = Image.open(img_path)
                         st.image(img, width=zoom, use_container_width=False)
                     else:
-                        st.warning("이미지 없음")
+                        st.warning(f"이미지 없음: {fname}")
                     st.markdown(f"**GT:** `{r['true']}`")
                     if show_hint:
                         st.markdown(

@@ -110,6 +110,7 @@ def main():
                 attn_rows.append({'true': gt, 'pred': pred_str, 'label': gt,
                                   'match': gt == pred_str, 'pred_decoder': 'attn',
                                   'candidates': pred_str,
+                                  'filename': str(r['filename']),
                                   'cer': cer(gt, pred_str)})
         attn_df = pd.DataFrame(attn_rows)
         # attention 전용 빈도그룹 집계

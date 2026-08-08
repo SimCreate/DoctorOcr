@@ -26,7 +26,6 @@ Kaggle RxHandBD 데이터셋(5,578장) 기반, v1 → v2 → v3 → v4 스토리
 ```
 DoctorOcr/
 ├── README.md                     # 상위 인덱스 (본 파일)
-├── DoctorOcr_발표_20260807.pptx  # 발표 PPT (정적 산출물)
 ├── .gitignore
 ├── v1/                           # v1 — 시작 (첫 CRNN + Attention)
 │   ├── local_train.py / local_infer.py
@@ -166,7 +165,7 @@ cd /home/dev/DoctorOcr/v4
 venv/bin/python -m streamlit run utils/result_viewer.py
 ```
 
-- 발표 PPT: `/home/dev/DoctorOcr/DoctorOcr_발표_20260807.pptx` (정적 산출물)
+- 결과 뷰어: `/home/dev/DoctorOcr/v4/utils/result_viewer.py` — Streamlit 정성 분석 (성공/부분실패/실패 갤러리, 디코더별 전환)
 - v4 학습 산출물: best `working/checkpoints/best_model_v3_3.pth` (epoch/optimizer/config 포함), 최신 실험 `best_model_v3_3e.pth` 보관
 - 문자 사전: `working/char_dict_v3_3.pkl` (char2idx, idx2char)
 
