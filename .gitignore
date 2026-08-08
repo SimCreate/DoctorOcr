@@ -46,6 +46,9 @@ venv/
 
 # Large dataset file
 doctor-handwriting-recognition-dataset.zip
+**/working/
+**/logs/
+**/data/
 doctor_ocr_v3/data/
 doctor_ocr_v3/working/
 legacy/doctor_ocr_v3/data/
