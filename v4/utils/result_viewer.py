@@ -160,13 +160,19 @@ for tab, cat in zip(tabs, cats):
                         st.image(img, width=zoom, use_container_width=False)
                     else:
                         st.warning(f"이미지 없음: {fname}")
-                    st.markdown(f"**GT:** `{r['true']}`")
+                    st.markdown(f"**GT (Ground Truth):** `{r['true']}`")
                     if show_hint:
                         st.markdown(
-                            f"**Pred:** {diff_html(r['true'], r['pred'])}",
+                            f"**Pred (Prediction):** {diff_html(r['true'], r['pred'])}",
                             unsafe_allow_html=True)
                     else:
-                        st.markdown(f"**Pred:** `{r['pred']}`")
+                        st.markdown(f"**Pred (Prediction):** `{r['pred']}`")
+                    group = r.get('group', '-')
+                    group_full = {
+                        'high': 'high (빈도 ≥10회)',
+                        'mid': 'mid (빈도 2~9회)',
+                        'low': 'low (빈도 1회)',
+                    }.get(group, group)
                     st.caption(
-                        f"CER {r['cer_f']:.2%} · {r.get('group','-')} · {img_path.name}")
+                        f"CER (Character Error Rate) {r['cer_f']:.2%} · {group_full} · {img_path.name}")
                     st.markdown("---")
