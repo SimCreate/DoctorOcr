@@ -191,15 +191,6 @@ v3 실험군 결과 (클린 스플릿 재실험, 2026-08-05)
 - 8/4 "증강 = 압도적 효과(+63p)"는 리키지 착시. 클린 기준 증강 효과는 +2.2p. 저빈도 합성은 -1.5p.
 - v2.2(CTC) 도입 배경: v2.1 Attention의 `Deliiiii` 반복 토큰 실패 → CTC로 해결 (추론 40%)
 
-## 참고 논문
-
-| 기술 | 논문 | 링크 |
-|---|---|---|
-| CRNN | An End-to-End Trainable Neural Network for Image-based Sequence Recognition (Shi et al., 2015) | https://arxiv.org/abs/1507.05717 |
-| CTC | Connectionist Temporal Classification (Graves et al., 2006) | https://www.cs.toronto.edu/~graves/icml_2006.pdf |
-| Attention | Attention Is All You Need (Vaswani et al., 2017) | https://arxiv.org/abs/1706.03762 |
-| Hybrid CTC+Attn | SVTRv2: CTC Beats Encoder-Decoder Models (arXiv:2409.02134 실존) | https://arxiv.org/abs/2409.02134 |
-
 ## Git
 
 ```bash
