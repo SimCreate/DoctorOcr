@@ -69,10 +69,11 @@ WARMUP_EPOCHS = 3
 DROPOUT = 0.3
 GRAD_CLIP = 1.0
 EARLY_STOP_PATIENCE = 15
-TEACHER_FORCING_START = 0.5
-TEACHER_FORCING_END = 0.1
-TEACHER_FORCING_DECAY = 0.92
-CTC_WEIGHT = 0.5         # λ — 하이브리드 비중
+TEACHER_FORCING_START = 0.2    # v3_3c: 낮게 시작 — 자기회귀 적응 최우선
+TEACHER_FORCING_END = 0.05
+TEACHER_FORCING_DECAY = 0.88   # v3_3c: 급강하 (v3_3b=0.90)
+CTC_WEIGHT = 0.3               # λ=0.3 — attention side 유지
+CE_WEIGHT = 3.0                # β=3.0 — CE 스케일 보존 (CE 만점 붕괴 방지)
 USE_AMP = True
 USE_GRADIENT_CHECKPOINTING = True
 NUM_WORKERS = 4
@@ -283,7 +284,7 @@ def validate(model, loader, device, attn_idx2char, ctc_idx2char, epoch, check_at
 
     print(f"[VAL] Epoch {epoch}: Loss={avg_loss:.4f}, CTC Acc={ctc_acc:.4f} ({ctc_correct}/{total})"
           + (f", Attn beam(200)={attn_acc:.4f}" if check_attn else ""))
-    return avg_loss, ctc_acc
+    return avg_loss, ctc_acc, attn_acc
 
 
 # ============================================================
@@ -318,7 +319,7 @@ def main():
     model = CRNN(vocab_size=len(attn_c2i), ctc_vocab_size=len(ctc_c2i),
                  hidden_size=384, dropout=DROPOUT,
                  use_gradient_checkpointing=USE_GRADIENT_CHECKPOINTING,
-                 pretrained=True, ctc_weight=CTC_WEIGHT).to(DEVICE)
+                 pretrained=True, ctc_weight=CTC_WEIGHT, ce_weight=CE_WEIGHT).to(DEVICE)
     print(f"[MODEL] Params={sum(p.numel() for p in model.parameters()):,}")
 
     # LR 그룹별 개별화 (backbone 낮게 / head 높게)
@@ -338,7 +339,9 @@ def main():
     ], weight_decay=WEIGHT_DECAY)
     scheduler = WarmupCosineScheduler(optimizer, WARMUP_EPOCHS, NUM_EPOCHS, head_lr)
 
+    best_hybrid_score = -1.0
     best_ctc_acc = 0.0
+    best_attn_acc = -1.0
     patience_counter = 0
 
     for epoch in range(1, NUM_EPOCHS + 1):
@@ -347,11 +350,18 @@ def main():
 
         train_loss = train_epoch(model, train_loader, optimizer, DEVICE, epoch)
         check_attn = (epoch % 5 == 0)
-        val_loss, val_acc = validate(model, val_loader, DEVICE, attn_i2c, ctc_i2c, epoch, check_attn=check_attn)
+        val_loss, val_acc, attn_acc = validate(model, val_loader, DEVICE, attn_i2c, ctc_i2c, epoch, check_attn=check_attn)
 
-        # best 저장: CTC acc 기준 (하이브리드 목표 = 중·저빈도·CER 개선)
-        if val_acc > best_ctc_acc:
-            best_ctc_acc = val_acc
+        # best 저장: 하이브리드 스코어 (CTC acc + attention acc, attention이 살아있으면 가중)
+        # attention은 매 5에폭만 측정 → 직전 값 유지
+        if attn_acc >= 0:
+            best_attn_acc = max(best_attn_acc, attn_acc)
+        attn_for_score = attn_acc if attn_acc >= 0 else -1.0
+        # 하이브리드: CTC acc + (attention 측정 시) attention acc의 0.5배 — attention 부활을 장려
+        hybrid_score = val_acc + (0.5 * attn_for_score if attn_for_score > 0 else 0.0)
+
+        if hybrid_score > best_hybrid_score:
+            best_hybrid_score = hybrid_score
             patience_counter = 0
             torch.save({
                 'epoch': epoch,
@@ -359,6 +369,7 @@ def main():
                 'optimizer_state_dict': optimizer.state_dict(),
                 'val_loss': val_loss,
                 'val_ctc_acc': val_acc,
+                'val_attn_acc': attn_acc,
                 'vocab_size': len(attn_c2i),
                 'ctc_vocab_size': len(ctc_c2i),
                 'config': {
@@ -372,9 +383,10 @@ def main():
                     'batch_size': BATCH_SIZE,
                     'accum_steps': ACCUM_STEPS,
                     'ctc_weight': CTC_WEIGHT,
+                    'ce_weight': CE_WEIGHT,
                 }
             }, BEST_MODEL_PATH)
-            print(f"[SAVED] Best model -> {BEST_MODEL_PATH} (val_ctc_acc={val_acc:.4f})")
+            print(f"[SAVED] Best model -> {BEST_MODEL_PATH} (hybrid={hybrid_score:.4f}, ctc={val_acc:.4f}, attn={attn_acc:.4f})")
         else:
             patience_counter += 1
             print(f"[EARLY STOP] Patience: {patience_counter}/{EARLY_STOP_PATIENCE}")
@@ -394,7 +406,7 @@ def main():
             print(f"\n[EARLY STOP] No improvement for {EARLY_STOP_PATIENCE} epochs. Stopping training.")
             break
 
-    print(f"\n[DONE] v3_3 training complete. Best val_ctc_acc: {best_ctc_acc:.4f}")
+    print(f"\n[DONE] v3_3 complete. best_hybrid={best_hybrid_score:.4f}, best_attn={best_attn_acc:.4f}")
 
 
 if __name__ == "__main__":

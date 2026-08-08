@@ -135,19 +135,21 @@
 
 ```bash
 cd /home/dev/DoctorOcr/doctor_ocr_v3_3
-CUDA_VISIBLE_DEVICES=1 venv/bin/python scripts/train_v3_3d.py   # 학습 (버그 수정판)
-CUDA_VISIBLE_DEVICES=1 venv/bin/python scripts/eval_v3_3.py --ckpt working/checkpoints/best_model_v3_3d.pth --out evaluate/result_v3_3d_clean.csv
+CUDA_VISIBLE_DEVICES=1 venv/bin/python scripts/train_v3_3.py    # 학습 (v3_3e = 라벨 정제 메인)
+CUDA_VISIBLE_DEVICES=1 venv/bin/python scripts/eval_v3_3.py --ckpt working/checkpoints/best_model_v3_3.pth --out evaluate/result_v3_3e_clean.csv
 ```
 
-**v3_3e (라벨 정제 — 최신)**
-```bash
-cd /home/dev/DoctorOcr/doctor_ocr_v3_3
-CUDA_VISIBLE_DEVICES=1 venv/bin/python scripts/train_v3_3e.py   # d와 코드 동일, 라벨 정제 데이터 사용
-```
+> 스크립트 이력: 학습 스크립트는 실험 단계별로 분리됐었으나, **v3_3e(라벨 정제, 최고 성적)를 메인 `train_v3_3.py`로 통합**. 이전 실험 단계(a~d)는 git history에서 확인 가능하며 파라미터 변화는 아래 표 참고.
 
-> ⚠️ **트랩**: `train_v3_3e.py`는 `train_v3_3d.py`의 복사본이라 (ckpt 경로만 e로 변경) **로그의 [DONE] 메시지가 "v3_3d complete"로 출력됨** — 기능 문제는 아님, 로그 읽을 때 주의. 또 epoch 저장 파일명도 `epoch_v3_3d_*.pth`로 기록됨.
+| 단계 | 핵심 변경 | 결과 (CTC greedy) |
+|---|---|---|
+| v3_3 | 하이브리드 첫 도입 | 45.4% |
+| v3_3b | TF 일정 수정 | (중간) |
+| v3_3c | TF 0.2→0.05, CE scale β=3.0 | (중간) |
+| v3_3d | 시퀀스 시프트 버그 수정 | 45.5%, attn beam5 56.5% |
+| **v3_3e** | **라벨 정제 (메인)** | **48.2%, attn beam(200) 67.0%** |
 
-**최종 체크포인트**: `working/checkpoints/best_model_v3_3e.pth` (best_hybrid=0.8171, best_attn=0.6700, best_ctc≈0.50)
+**최종 체크포인트**: `working/checkpoints/best_model_v3_3e.pth` (best_hybrid=0.8171, best_attn=0.6700, best_ctc≈0.50) — train_v3_3.py 재학습 시 `best_model_v3_3.pth`로 저장됨
 **eval 결과**: `evaluate/result_v3_3e_clean.csv` (CTC greedy, val 1,116, 전체 exact 48.2%)
 
 ---
