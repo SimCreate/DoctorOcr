@@ -8,6 +8,14 @@
 
 ## 1. 전체 구조
 
+이 문서에서 쓰는 주요 약어. 첫 등장(여기)에만 풀네임을 병기하고, 이후에는 약어로만 쓴다.
+
+- **CNN** (Convolutional Neural Network, 합성곱 신경망)
+- **BiLSTM** (Bidirectional Long Short-Term Memory, 양방향 장단기 메모리)
+- **CTC** (Connectionist Temporal Classification)
+- **ResNet** (Residual Network, 잔차 네트워크)
+- **SEBlock** (Squeeze-and-Excitation Block, 채널 강조 블록)
+
 입력 처방전 이미지 X → CNN 특징 추출 → 시퀀스 모델링 → transcription 순서다.
 
 ```
@@ -43,7 +51,7 @@ X ──▶ CNN(시각적 특징) ──▶ BiLSTM(좌우 문맥) ──▶ Atte
 
 | 단계 | 디코더 | 손실 | exact (클린 val) |
 |---|---|---|---|
-| v1 | AttentionDecoder 4-head (LSTM1) | CE | 0% |
+| v1 | AttentionDecoder 4-head (LSTM1) | CE (Cross Entropy, 교차 엔트로피) | 0% |
 | v2 | AttentionDecoder 8-head (LSTM2) + Beam | CE | ~20% |
 | v3 | AttentionDecoder 8-head + Beam | CE | 35.8~37.9% |
 | v4 | AttentionDecoder 8-head + CTCHead (하이브리드) | λ·L_ctc + (1-λ)·β·L_ce | attn 62.3% / CTC 48.2% |
@@ -56,24 +64,24 @@ X ──▶ CNN(시각적 특징) ──▶ BiLSTM(좌우 문맥) ──▶ Atte
 
 ### 3.1 CNN 인코더 — 7Conv → SEBlock → resnet18
 
-**왜 CNN인가**: 처방전 이미지는 2차원 신호다. 획의 방향·곡률·교차점·굵기 같은 local visual pattern이 중요하다. CNN은 local receptive field로 이런 특징을 계층적으로 추출한다 — 초기 레이어는 edge/stroke, 깊어질수록 문자 부분·문자 형태로 receptive field가 커진다. 원조 CRNN(Shi et al. 2015)은 문자 단위 segmentation 없이 가변길이 시퀀스를 처리하는 것이 핵심 장점이었다.
+**왜 CNN인가**: 처방전 이미지는 2차원 신호다. 획의 방향·곡률·교차점·굵기 같은 local visual pattern이 중요하다. CNN은 local receptive field로 이런 특징을 계층적으로 추출한다 — 초기 레이어는 edge/stroke, 깊어질수록 문자 부분·문자 형태로 receptive field가 커진다. 원조 CRNN(Convolutional Recurrent Neural Network, 합성곱 순환 신경망 — Shi et al. 2015)은 문자 단위 segmentation 없이 가변길이 시퀀스를 처리하는 것이 핵심 장점이었다.
 
 **7Conv의 의미**: 특별한 이론적 숫자가 아니라 충분한 convolution depth를 확보하는 설계 선택이다. 손글씨에서 `rn`과 `m`처럼 작은 local patch만 보면 구분이 어려운 경우, 깊은 CNN이 여러 패턴을 조합해 더 넓은 context를 얻는다. 한계는 long-range dependency 부족, 명시적 sequence ordering 모델 부재, 과한 pooling에 의한 세부 획 정보 손실이다.
 
 **SEBlock (Hu et al. 2018, Squeeze-and-Excitation Networks)**: CNN이 spatial 정보와 channel 정보를 함께 추출하지만 채널 간 중요도를 명시적으로 모델링하지 못한다는 문제에서 출발했다. 세 단계로 작동한다.
 - Squeeze: 각 채널을 spatial global average pooling으로 스칼라 하나에 압축
-- Excitation: 작은 MLP + sigmoid로 채널별 중요도 s ∈ [0,1] 학습
+- Excitation: 작은 MLP(Multi-Layer Perceptron, 다층 퍼셉트론) + sigmoid로 채널별 중요도 s ∈ [0,1] 학습
 - Recalibration: 채널 출력에 s를 곱해 재조정
 
 채널 A가 획을 잘 잡고 B가 배경 노이즈를 잡는다면, SE가 A에 높은 가중치를 준다. **주의**: spatial attention이 아니라 channel attention이다. "이미지의 x=130 위치가 중요하다"를 선택하는 게 아니라 "이 feature channel이 중요하다"를 선택한다 (교차검증: 로컬 LLM이 "SEBlock은 인코더 단계가 아니라 CNN 내부 모듈"로 정정). SE 자체는 sequence ordering이나 문자 정렬을 해결하지 않는다 — 이후 BiLSTM/Attention/CTC 담당.
 
-**ResNet18 (He et al. 2015)**: 핵심은 잔차 학습 y = F(x) + x. 네트워크가 H(x)를 직접 학습하는 대신 잔차 F(x) = H(x) − x를 학습해 깊은 네트워크의 최적화를 안정화한다. v3에서 256x64 무조건 리사이즈(4:1 왜곡)를 256x128 비율유지 패딩으로 바꾸고, SEBlock CNN을 ImageNet pretrained resnet18로 교체했다 — 사전학습 backbone이 저수준 특징(획/에지) 전이에 효과적이라는 교차검증(2026-08-07) 합의에 따른 것. 한계: (a) stride conv 다운샘플링에 의한 해상도 손실 — `ll` 같은 작은 차이를 지울 수 있음 (b) 일반 분류용 backbone이라 width 방향 해상도를 과도하게 줄이는 것을 피해야 함 (c) ImageNet(자연 이미지)과 흑백/필기체의 도메인 미스매치 — fine-tuning 필요.
+**ResNet18 (He et al. 2015)**: 핵심은 잔차 학습 y = F(x) + x. 네트워크가 H(x)를 직접 학습하는 대신 잔차 F(x) = H(x) − x를 학습해 깊은 네트워크의 최적화를 안정화한다. v3에서 256x64 무조건 리사이즈(4:1 왜곡)를 256x128 비율유지 패딩으로 바꾸고, SEBlock CNN을 ImageNet pretrained resnet18로 교체했다 — 사전학습 backbone이 저수준 특징(획/에지) 전이에 효과적이라는 교차검증(2026-08-07) 합의에 따른 것. 한계: (a) stride convolution(보폭 합성곱) 다운샘플링에 의한 해상도 손실 — `ll` 같은 작은 차이를 지울 수 있음 (b) 일반 분류용 backbone이라 width 방향 해상도를 과도하게 줄이는 것을 피해야 함 (c) ImageNet(자연 이미지)과 흑백/필기체의 도메인 미스매치 — fine-tuning 필요.
 
 ### 3.2 BiLSTM — 시퀀스 인코더
 
 CNN 특징맵을 width 방향으로 펼치면 x₁,…,x_T 시퀀스가 된다. 일본어/영어 필기체에서 현재 글자를 읽을 때 앞뒤 문맥이 모두 필요하다 — 어떤 획이 a/o/e 중 무엇인지 local image만으로 애매할 수 있기 때문이다.
 
-- **LSTM**: 일반 RNN은 긴 시퀀스에서 gradient vanishing이 생기는데, LSTM은 cell state에 정보를 선택적으로 보존(i/f/o 게이트)해 완화한다.
+- **LSTM (Long Short-Term Memory, 장단기 메모리)**: 일반 RNN(Recurrent Neural Network, 순환 신경망)은 긴 시퀀스에서 gradient vanishing이 생기는데, LSTM은 cell state에 정보를 선택적으로 보존(i/f/o 게이트)해 완화한다.
 - **BiLSTM**: 순방향 LSTM과 역방향 LSTM을 동시에 계산하고 은닉 상태를 결합([h→; h←])해 왼쪽+오른쪽 문맥을 모두 사용한다. 필기체에서 현재 문자가 애매할 때 오른쪽 글자를 함께 보면 판단이 쉬워진다.
 
 단점은 순차 계산이라 Transformer처럼 병렬화가 어렵다는 것. 이것이 이후 SVTR이 sequence model 자체를 제거하고 visual token mixing만으로 인식하는 방향으로 발전한 배경과 연결된다.
@@ -132,8 +140,8 @@ Attention 디코더는 매 timestep P(y_t | y_<t, X)를 계산한다. Greedy는 
 
 ### 3.8 차세대 방향 — TrOCR / SVTR (비교축)
 
-- **TrOCR (Li et al. 2021/2022)**: CNN→RNN→문자 디코더 계열에서 벗어나 vision(Image Transformer)과 text(Text Transformer)를 모두 Transformer로 처리하고 pretrained 모델을 활용한다. 우리 v4의 다음 세대 방향으로 자연스럽다.
-- **SVTR (Du et al. 2022)**: sequence model을 제거하고 visual token의 local/global mixing만으로 텍스트 인식. "BiLSTM이 최신 OCR에서 반드시 필요한가"라는 근본 질문을 던진다.
+- **TrOCR (Transformer-based OCR, Li et al. 2021/2022)**: CNN→RNN→문자 디코더 계열에서 벗어나 vision(Image Transformer)과 text(Text Transformer)를 모두 Transformer로 처리하고 pretrained 모델을 활용한다. 우리 v4의 다음 세대 방향으로 자연스럽다.
+- **SVTR (Scene Text Recognition with a Single Visual Model, Du et al. 2022)**: sequence model을 제거하고 visual token의 local/global mixing만으로 텍스트 인식. "BiLSTM이 최신 OCR에서 반드시 필요한가"라는 근본 질문을 던진다.
 - 비교축: CRNN+CTC / CRNN+Attention / CRNN+CTC+Attention / SVTR / TrOCR 5-way가 후속 실험의 자연스러운 구성.
 
 ---
@@ -143,7 +151,7 @@ Attention 디코더는 매 timestep P(y_t | y_<t, X)를 계산한다. Greedy는 
 - **시퀀스 시프트 버그**: attention(순차 모델)은 학습 시 입력/정답 시프트 일치가 생명. 정답을 targets[:,1:]로 시프트하기 전엔 모델이 <SOS>→<SOS> 자기복사만 학습해 beam 0%였음.
 - **의료 도메인 특수성**: 비정상 문자 간격, 필기체 연결, `rn↔m`, `cl↔d` 같은 segmentation ambiguity, amoxicillin 같은 의료 vocabulary가 중요. Attention 디코더는 언어 prior가 유리할 수 있으나 동시에 이미지에 없는 글자를 "그럴듯하게" 만들어내는 **hallucination 위험이 있다** — CTC branch를 함께 두는 것이 단순 성능 trick 이상의 의미를 가진다.
 - **숫자 오류가 치명적**: 500mg / 5mg / 0.5mg는 작은 시각 오류가 큰 의미적 오류가 된다.
-- **저빈도 붕괴** (attn 0.9% / CTC 2.8%)는 디코더 무관의 데이터/라벨 문제로 확정 — 다음 단계 핵심 타깃.
+- **저빈도 붕괴** (attn(Attention) 0.9% / CTC 2.8%)는 디코더 무관의 데이터/라벨 문제로 확정 — 다음 단계 핵심 타깃.
 
 ---
 
@@ -160,7 +168,7 @@ Attention 디코더는 매 timestep P(y_t | y_<t, X)를 계산한다. Greedy는 
 ### 로컬 V4 Flash가 ChatGPT를 수정한 지점 (반영 완료)
 1. **SEBlock 위치**: "인코더 단계"가 아니라 CNN 내부의 채널 어텐션 모듈 → 본문 3.1에 반영
 2. **ResNet "pooling으로 문자 정보 손실"**: 정확히는 stride conv/downsampling에 의한 해상도 손실 → 3.1에 반영
-3. **β 의미**: 로컬 LLM은 "일반적으로 joint decoding의 LM 가중치"라고 했으나, 우리 코드에서 β=3.0은 loss 식 안의 CE 배율 → 우리 코드 기준으로 3.6에 명시
+3. **β 의미**: 로컬 LLM은 "일반적으로 joint decoding의 LM(Language Model, 언어 모델) 가중치"라고 했으나, 우리 코드에서 β=3.0은 loss 식 안의 CE 배율 → 우리 코드 기준으로 3.6에 명시
 4. **진화 순서**: 채택하지 않음 — 로컬 LLM도 "v1이 7Conv+BiLSTM+CTC였다"고 가정했는데, **실제 우리 v1은 attention 디코더 기반(CE)이고 CTC는 v2_2에서 먼저 검증 후 v4에서 통합**됨. 두 LLM 모두 우리 이력을 모른 채 일반화했으므로 이 문서는 코드 기반 계보(2장)를 표준으로 삼음.
 
 ### 우리 프로젝트 이력과의 정합성 (문서 작성 시 정정)
