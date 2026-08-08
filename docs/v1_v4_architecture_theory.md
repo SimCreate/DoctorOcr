@@ -18,10 +18,14 @@
 
 입력 처방전 이미지 X → CNN 특징 추출 → 시퀀스 모델링 → transcription 순서다.
 
-```
-X ──▶ CNN(시각적 특징) ──▶ BiLSTM(좌우 문맥) ──▶ Attention Decoder(문자열 생성)
-                                                └─▶ CTC Head(정렬-자유 정렬)
-손실: L = λ·L_ctc + (1-λ)·β·L_ce
+```mermaid
+flowchart TB
+    X["처방전 이미지 X"] --> CNN["CNN 인코더<br/>(시각적 특징 추출)"]
+    CNN --> BLSTM["BiLSTM<br/>(좌우 문맥 반영)"]
+    BLSTM --> ATT["Attention Decoder<br/>(문자열 생성)"]
+    BLSTM --> CTC["CTC Head<br/>(정렬 자유 인식)"]
+    ATT --> Y["출력 문자열 Y"]
+    CTC --> Y
 ```
 
 각 구성 요소는 서로 다른 종류의 **inductive bias**를 결합한 것으로 볼 수 있다.
@@ -57,6 +61,30 @@ X ──▶ CNN(시각적 특징) ──▶ BiLSTM(좌우 문맥) ──▶ Atte
 | v4 | AttentionDecoder 8-head + CTCHead (하이브리드) | λ·L_ctc + (1-λ)·β·L_ce | attn 62.3% / CTC 48.2% |
 
 > 실제 이력상 CTC는 v1/v2의 attention 계열과 별개로 v2_2(레거시, CTC 전용)에서 먼저 검증됐고, v4에서 attention과 공동 손실로 통합됐다. v1부터 CTC였던 구조가 아니다.
+
+```mermaid
+flowchart LR
+    subgraph V1["v1 — 시작"]
+        A1["7 Conv → 512ch"] --> B1["BiLSTM 2층 hidden 256"] --> C1["Attn 4-head (LSTM1)"]
+    end
+    subgraph V2["v2 — 데이터 확장 + 아키텍처 개선"]
+        A2["SEBlock 5블록 → 512ch"] --> B2["BiLSTM 3층 hidden 384"] --> C2["Attn 8-head (LSTM2) + Beam"]
+    end
+    subgraph V3["v3 — 데이터 증량 + 백본 전환"]
+        A3["resnet18 (pretrained)"] --> B3["BiLSTM 3층 hidden 384"] --> C3["Attn 8-head + Beam"]
+    end
+    subgraph V4["v4 — 하이브리드 (현재 메인)"]
+        A4["resnet18 (pretrained)"] --> B4["BiLSTM 3층 hidden 384"]
+        B4 --> D4["Attn 8-head (beam5)"]
+        B4 --> E4["CTC Head (blank=0)"]
+    end
+    V1 --> V2 --> V3 --> V4
+    V1 -. "0%" .-> V4
+    V2 -. "~20%" .-> V4
+    V3 -. "35.8~37.9%" .-> V4
+```
+
+> 각 단계의 exact(클린 val): v1 0% → v2 ~20% → v3 35.8~37.9% → v4 attn 62.3% / CTC 48.2%
 
 ---
 
@@ -121,10 +149,17 @@ CTC가 "이미지 feature를 문자로 정렬"에 가깝다면, Seq2Seq는 "지�
 
 v4는 공유 인코더(resnet18+BiLSTM)에 두 헤드를 병렬로 붙인다.
 
-```
-Shared Encoder ──┬── CTC loss
-                 └── Attention loss
-L = λ·L_ctc + (1-λ)·β·L_ce
+```mermaid
+flowchart TB
+    IN["입력 [B,3,256,128]"] --> RES["resnet18 layer1~3<br/>(ImageNet pretrained)"]
+    RES --> BI["BiLSTM 3층 (hidden 384)"]
+    BI --> H1["CTC Head → L_ctc"]
+    BI --> H2["AttentionDecoder → L_ce"]
+    subgraph LOSS["공동 손실 L = λ·L_ctc + (1-λ)·β·L_ce"]
+        L1["λ·L_ctc + (1-λ)·β·L_ce"]
+    end
+    H1 --> L1
+    H2 --> L1
 ```
 
 **이론적 근거 (Kim, Hori, Watanabe 2016; Watanabe et al. 2017)**: 넓은 의미에서 shared encoder + 서로 다른 supervision head를 쓰는 **multi-task learning**이다. 두 task가 완전히 다른 것은 아니지만 같은 인코더 표현에 서로 보완적인 학습 신호를 제공한다. CTC는 attention의 초기 alignment 문제를 보완하고 수렴·강건성을 개선한다.
