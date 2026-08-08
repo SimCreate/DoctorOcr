@@ -38,12 +38,12 @@ EVAL = REPO / "evaluate"
 IMG_ROOT = Path("/home/dev/doctor_ocr_v2/dataset/img/img")
 
 # 사용 가능한 결과 CSV: 이름 -> 절대경로
+# (메인 README 버전 계보 v1→v4 기준 — v1은 0%·결과 데이터 부실로 제외, v2/v3/v4 + v4 CTC 대표)
 AVAILABLE = {
-    "v4 CTC greedy (최신)": EVAL / "result_v3_3e_clean.csv",
-    "v4 Attention beam5 (최신)": EVAL / "result_v3_3e_clean_attn.csv",
-    "v4 v3_3d (Attention으로 보강)": EVAL / "result_v3_3d_clean.csv",
-    "v3_2 (Attention, 최신)": EVAL / "result_v3_2_clean.csv",
-    "v3_1 (Attention, 최종)": EVAL / "result_v3_1_clean.csv",
+    "v2 — Attention (Beam)": EVAL / "result_v2_clean.csv",
+    "v3 — Attention (resnet18, Beam)": EVAL / "result_v3_2_clean.csv",
+    "v4 — Attention beam5 ★ (하이브리드)": EVAL / "result_v3_3e_clean_attn.csv",
+    "v4 — CTC greedy (하이브리드)": EVAL / "result_v3_3e_clean.csv",
 }
 # 존재하는 것만
 AVAILABLE = {k: v for k, v in AVAILABLE.items() if v.exists()}
